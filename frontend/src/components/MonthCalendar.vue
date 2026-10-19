@@ -47,20 +47,16 @@
             <CalendarCellTrigger
               :day="date"
               :month="m.value"
-              class="group/day flex h-auto min-h-[4.75rem] w-full flex-col items-center justify-start gap-1 rounded-xl bg-transparent px-0.5 pb-1.5 pt-1.5 font-normal ring-1 ring-inset ring-transparent transition hover:bg-transparent active:scale-95 data-[outside-view]:opacity-30 data-[selected]:bg-transparent data-[today]:bg-transparent data-[selected]:ring-foreground/80 data-[today]:ring-foreground/40 data-[selected]:text-foreground data-[selected]:hover:bg-transparent data-[selected]:hover:text-foreground data-[selected]:focus:bg-transparent data-[selected]:focus:text-foreground [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-foreground sm:min-h-28 sm:items-stretch sm:gap-1 sm:px-1.5"
+              class="group/day flex h-auto min-h-[4.75rem] w-full flex-col items-center justify-start gap-1.5 rounded-2xl bg-transparent px-0.5 pb-1.5 pt-1.5 font-normal transition hover:bg-transparent active:scale-95 data-[outside-view]:opacity-30 data-[selected]:bg-muted data-[selected]:hover:bg-muted data-[selected]:focus:bg-muted data-[selected]:text-foreground [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-foreground sm:min-h-28 sm:items-stretch sm:gap-1 sm:px-1.5"
             >
-              <span class="flex h-7 items-center justify-center text-[15px] font-medium sm:self-start sm:px-1">{{ date.day }}</span>
+              <span class="flex size-7 items-center justify-center rounded-full text-[15px] font-medium group-data-[today]/day:bg-primary group-data-[today]/day:font-semibold group-data-[today]/day:text-primary-foreground sm:self-start">{{ date.day }}</span>
 
-              <!-- mobile: colour pills -->
-              <span v-if="dayEntries(date).length" class="flex w-full flex-col items-center gap-[3px] sm:hidden">
-                <span
-                  v-for="e in dayEntries(date).slice(0, 3)"
-                  :key="e.shift.id + e.who"
-                  class="flex h-3.5 w-full items-center justify-center rounded-[5px]"
-                  :style="{ background: e.color }"
-                >
-                  <Moon v-if="isNightShift(e.shift)" class="size-2 text-white" />
-                </span>
+              <!-- mobile: colour dots -->
+              <span v-if="dayEntries(date).length" class="flex w-full flex-wrap items-center justify-center gap-1 sm:hidden">
+                <template v-for="e in dayEntries(date).slice(0, 4)" :key="e.shift.id + e.who">
+                  <Moon v-if="isNightShift(e.shift)" class="size-3.5" stroke-width="2.5" :style="{ color: e.color }" />
+                  <span v-else class="size-2.5 rounded-full" :style="{ background: e.color }" />
+                </template>
               </span>
 
               <!-- tablet+: dot + time -->
@@ -70,7 +66,7 @@
                   :title="`${e.name}: ${e.shift.start}–${e.shift.end} ${e.shift.note ?? ''}`"
                 >
                   <span class="size-2.5 shrink-0 rounded-full" :style="{ background: e.color }" />
-                  <Moon v-if="isNightShift(e.shift)" class="-mx-0.5 size-3 shrink-0" aria-label="Ночная смена" />
+                  <Moon v-if="isNightShift(e.shift)" class="-mx-0.5 size-3.5 shrink-0" stroke-width="2.5" :style="{ color: e.color }" aria-label="Ночная смена" />
                   {{ e.shift.start }}–{{ e.shift.end }}
                 </span>
               </template>

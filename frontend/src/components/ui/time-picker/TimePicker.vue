@@ -81,8 +81,8 @@ watch(open, async (v) => {
         <span class="flex-1">Часы</span>
         <span class="flex-1">Минуты</span>
       </div>
-      <div class="flex gap-2" data-vaul-no-drag>
-        <div ref="hoursEl" class="flex h-60 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="listbox" aria-label="Часы">
+      <div class="flex min-h-0 flex-1 gap-2" data-vaul-no-drag>
+        <div ref="hoursEl" class="flex h-full flex-1 flex-col gap-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="listbox" aria-label="Часы">
           <button
             v-for="h in hours"
             :key="h"
@@ -94,7 +94,7 @@ watch(open, async (v) => {
             @click="setHour(h)"
           >{{ pad(h) }}</button>
         </div>
-        <div ref="minutesEl" class="flex h-60 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="listbox" aria-label="Минуты">
+        <div ref="minutesEl" class="flex h-full flex-1 flex-col gap-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="listbox" aria-label="Минуты">
           <button
             v-for="m in minutes"
             :key="m"
@@ -109,7 +109,7 @@ watch(open, async (v) => {
       </div>
       <button
         type="button"
-        class="mt-4 h-12 w-full rounded-full bg-foreground text-base font-medium text-background transition-colors active:bg-foreground/90"
+        class="mt-4 h-12 w-full shrink-0 rounded-full bg-foreground text-base font-medium text-background transition-colors active:bg-foreground/90"
         @click="confirm"
       >Готово</button>
     </DrawerContent>

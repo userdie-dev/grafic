@@ -51,14 +51,16 @@ function pick(v: DateValue | undefined) {
     <DrawerContent class="pb-[max(1rem,env(safe-area-inset-bottom))]">
       <DrawerTitle class="pt-3 text-center">{{ title || 'Выберите дату' }}</DrawerTitle>
       <DrawerDescription class="sr-only">Календарь</DrawerDescription>
-      <Calendar
-        :model-value="value"
-        :min-value="minValue"
-        locale="ru"
-        :week-starts-on="1"
-        class="mx-auto w-full max-w-sm bg-transparent [--cell-size:--spacing(10)]"
-        @update:model-value="pick"
-      />
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <Calendar
+          :model-value="value"
+          :min-value="minValue"
+          locale="ru"
+          :week-starts-on="1"
+          class="mx-auto w-full max-w-sm bg-transparent [--cell-size:--spacing(10)]"
+          @update:model-value="pick"
+        />
+      </div>
     </DrawerContent>
   </Drawer>
 </template>

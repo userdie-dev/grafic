@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core'
+import { Capacitor, CapacitorHttp } from '@capacitor/core'
 import { CapacitorUpdater } from '@capgo/capacitor-updater'
 
 const RELEASE_BASE = 'https://github.com/userdie-dev/grafic/releases/latest/download'
@@ -17,9 +17,10 @@ export async function initUpdater() {
   await CapacitorUpdater.notifyAppReady()
 
   try {
-    const res = await fetch(`${RELEASE_BASE}/version.json`, { cache: 'no-store' })
-    if (!res.ok) return
-    const remote = (await res.json()) as RemoteVersion
+    // нативный http: fetch из webview блокируется CORS (редирект github.com -> githubusercontent без заголовков)
+    const res = await CapacitorHttp.get({ url: `${RELEASE_BASE}/version.json`, headers: { 'Cache-Control': 'no-cache' } })
+    if (res.status !== 200) return
+    const remote = (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) as RemoteVersion
     if (!remote.build || remote.build === __BUILD_ID__) return
 
     const bundle = await CapacitorUpdater.download({ url: remote.url, version: remote.build })

@@ -55,7 +55,7 @@ const saved = () => w.emitted('save')!
 describe('list view', () => {
   it('shows an empty state and the formatted date', async () => {
     await mountEditor()
-    expect(body().textContent).toContain('График — 07.01.2030')
+    expect(body().textContent).toContain('07.01.2030')
     expect(body().textContent).toContain('В этот день смен нет')
   })
 
@@ -183,8 +183,8 @@ describe('adding shifts', () => {
   it('saves a single weekly shift with the default times', async () => {
     await mountEditor()
     await openAdd()
-    expect(body().textContent).toContain('Новая смена')
-    expect(body().textContent).toContain('Заполнить график до')
+    expect(body().textContent).toContain('07.01.2030')
+    expect(body().textContent).not.toContain('Заполнить график до')
     await submit()
     expect(saved()[0]).toEqual([[{ date: '2030-01-07', start: '09:00', end: '18:00', note: null }], []])
   })
@@ -222,7 +222,7 @@ describe('adding shifts', () => {
     await openAdd()
     await click(btn('2/2'))
     expect(body().textContent).toContain('2 раб., 2 вых., начиная с выбранного дня')
-    expect(body().textContent).toContain('Заполнить график до')
+    expect(body().textContent).not.toContain('Заполнить график до')
     await submit()
     const dates = (saved()[0] as any)[0].map((i: any) => i.date)
     expect(dates.slice(0, 8)).toEqual(['2030-01-07', '2030-01-08', '2030-01-11', '2030-01-12', '2030-01-15', '2030-01-16', '2030-01-19', '2030-01-20'])
@@ -335,29 +335,13 @@ describe('custom presets', () => {
     expect(body().textContent).toContain('Рабочих дней')
   })
 
-  it('requires all four preset times', async () => {
-    await open()
-    timePickers()[0]!.vm.$emit('update:modelValue', '') // draft dayStart (the draft pickers come first)
-    await flushPromises()
-    await click(btn('Сохранить пресет'))
-    expect(body().textContent).toContain('Укажите время смен')
-  })
-
-  it('stores the picked draft times', async () => {
-    await open()
-    ;[ '06:00', '14:00', '22:00', '06:00' ].forEach((v, i) => timePickers()[i]!.vm.$emit('update:modelValue', v))
-    await flushPromises()
-    await click(btn('Сохранить пресет'))
-    expect(usePresetsStore().all.at(-1)).toMatchObject({ day: ['06:00', '14:00'], night: ['22:00', '06:00'] })
-  })
-
   it('deletes a custom preset and falls back to the plain one', async () => {
     await open()
     await click(btn('Сохранить пресет'))
     await click(btn('Удалить пресет'))
     expect(usePresetsStore().all.every((p) => !p.custom)).toBe(true)
     expect(body().textContent).not.toContain('Удалить пресет')
-    expect(body().textContent).toContain('Заполнить график до')
+    expect(body().textContent).not.toContain('Заполнить график до')
   })
 
   it('selecting a preset closes the draft panel', async () => {

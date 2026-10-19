@@ -4,13 +4,13 @@
       <div class="flex items-center justify-between gap-2 px-1 pb-3 pt-2">
         <div class="flex min-w-0 items-center gap-2">
           <Button v-if="view === 'form'" type="button" variant="ghost" size="icon" aria-label="Назад" class="-ml-1 rounded-full" @click="backToList"><RiArrowLeftLine /></Button>
-          <DrawerTitle class="truncate text-lg">{{ view === 'form' ? (editing ? 'Изменить смену' : 'Новая смена') : 'График' }} — {{ title }}</DrawerTitle>
+          <DrawerTitle class="truncate text-lg">{{ editing ? `Изменить смену — ${title}` : title }}</DrawerTitle>
         </div>
         <Button v-if="view === 'list'" type="button" size="icon-lg" class="shrink-0 rounded-full" aria-label="Добавить смену" @click="openForm(null)"><RiAddLine class="size-5" /></Button>
       </div>
       <DrawerDescription class="sr-only">Смены на выбранный день</DrawerDescription>
 
-      <div class="max-h-[calc(80vh-6rem)] overflow-y-auto overscroll-contain px-1 pb-1">
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-1">
       <div v-if="view === 'list'" class="space-y-3">
       <ul class="space-y-1.5">
         <li v-for="s in shifts" :key="s.id" class="flex items-center justify-between gap-2 rounded-2xl bg-secondary px-3 py-2.5 text-sm">
@@ -69,10 +69,6 @@
                 @click="toggleDay(d.dow)"
               >{{ d.label }}</Button>
             </div>
-            <div class="flex gap-2">
-              <label class="flex-1 space-y-1 text-xs text-muted-foreground">Время смены: с<TimePicker v-model="draft.dayStart" /></label>
-              <label class="flex-1 space-y-1 text-xs text-muted-foreground">до<TimePicker v-model="draft.dayEnd" /></label>
-            </div>
             <p v-if="draftProblem" class="text-sm text-destructive">{{ draftProblem }}</p>
             <Button type="button" size="sm" class="w-full rounded-full" @click="createPreset">Сохранить пресет</Button>
           </div>
@@ -97,10 +93,6 @@
           <label class="flex-1 space-y-1 text-xs text-muted-foreground">Конец<TimePicker v-model="end" /></label>
         </div>
         <Input v-model="note" maxlength="200" placeholder="Заметка" class="h-10" />
-        <label v-if="!editing" class="block text-xs text-muted-foreground">
-          Заполнить график до
-          <DatePicker v-model="repeatUntil" :min="date" class="mt-1" />
-        </label>
         <p v-if="problem" class="text-sm text-destructive">{{ problem }}</p>
         <div class="flex gap-2">
           <Button size="lg" class="h-11 flex-1 rounded-full bg-foreground text-background hover:bg-foreground/90">Сохранить</Button>
@@ -120,7 +112,6 @@ import { Moon } from '@lucide/vue'
 import { isNightShift } from '@/lib/night'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
-import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { TimePicker } from '@/components/ui/time-picker'
 import type { Shift, ShiftInput } from '@/lib/dto'
@@ -166,7 +157,6 @@ const editing = ref<Shift | null>(null)
 const start = ref('09:00')
 const end = ref('18:00')
 const note = ref('')
-const repeatUntil = ref('')
 const problem = ref('')
 const creating = ref(false)
 
@@ -195,8 +185,6 @@ const draft = reactive({
   work: 2,
   off: 2,
   days: [1, 2, 3, 4, 5],
-  dayStart: '08:00',
-  dayEnd: '20:00',
 })
 
 function toggleDay(d: number) {
@@ -212,10 +200,6 @@ function createPreset() {
     draftProblem.value = 'Выберите хотя бы один день недели'
     return
   }
-  if (!draft.dayStart || !draft.dayEnd) {
-    draftProblem.value = 'Укажите время смен'
-    return
-  }
   draftProblem.value = ''
   const created = presets.add({
     label: draft.label.trim() || (draft.mode === 'cycle' ? `${draft.work}/${draft.off}` : 'Свой'),
@@ -224,7 +208,7 @@ function createPreset() {
       draft.mode === 'cycle'
         ? { type: 'cycle', work: draft.work, off: draft.off }
         : { type: 'weekdays', days: [...draft.days] },
-    day: [draft.dayStart, draft.dayEnd],
+    day: ['08:00', '20:00'],
     night: ['20:00', '08:00'],
   })
   draft.label = ''
@@ -246,7 +230,6 @@ function edit(s: Shift | null) {
   start.value = s?.start ?? preset.value.day[0]
   end.value = s?.end ?? preset.value.day[1]
   note.value = s?.note ?? ''
-  repeatUntil.value = ''
   problem.value = ''
 }
 
@@ -260,13 +243,13 @@ function submit() {
   const add = (d: Date) => items.push({ date: iso(d), start: start.value, end: end.value, note: note.value || null })
   if (editing.value || isWeekly.value) {
     let d = first
-    const last = repeatUntil.value && !editing.value ? parseISO(repeatUntil.value) : d
+    const last = editing.value ? d : addDays(first, DEFAULT_FILL_DAYS - 1)
     while (d <= last && items.length < 366) {
       add(d)
       d = addWeeks(d, 1)
     }
   } else {
-    const last = repeatUntil.value ? parseISO(repeatUntil.value) : addDays(first, DEFAULT_FILL_DAYS - 1)
+    const last = addDays(first, DEFAULT_FILL_DAYS - 1)
     for (let d = first, i = 0; d <= last; d = addDays(d, 1), i++) {
       if (items.length >= 366) {
         problem.value = 'Слишком длинный период (максимум 366 смен)'
