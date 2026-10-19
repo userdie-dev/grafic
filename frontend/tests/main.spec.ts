@@ -25,7 +25,13 @@ it('boots the app into #app and routes unknown paths home', async () => {
   expect(document.documentElement.classList.contains('dark')).toBe(true)
 })
 
-it('has sane vue-query defaults', async () => {
-  const { vueQueryOptions } = await import('@/app/config/query')
-  expect(vueQueryOptions.queryClientConfig?.defaultOptions?.queries?.retry).toBe(1)
+it('persists successful queries and restores them on startup', async () => {
+  vi.useFakeTimers()
+  const { createQueryClient } = await import('@/app/config/query')
+  const a = createQueryClient()
+  expect(a.getDefaultOptions().queries?.retry).toBe(1)
+  a.setQueryData(['shifts', 'me'], [{ id: '1' }])
+  vi.advanceTimersByTime(600)
+  const b = createQueryClient()
+  expect(b.getQueryData(['shifts', 'me'])).toEqual([{ id: '1' }])
 })

@@ -38,46 +38,23 @@
 
     <section>
       <h2 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Сервер и данные
-      </h2>
-      <div class="space-y-3 overflow-hidden rounded-3xl bg-card p-4 shadow-sm">
-        <div class="flex items-center gap-3">
-          <ConnectionDot />
-          <span class="flex-1 text-[15px] font-semibold">{{ label }}</span>
-        </div>
-        <div class="space-y-3 text-sm text-muted-foreground">
-          <div>
-            <p class="font-medium text-foreground">Как используется сеть</p>
-            <p>
-              Приложение хранит ваши смены на сервере, чтобы друзья могли видеть график по коду.
-              Запросы идут к серверу графика: загрузка и сохранение смен, подписки на друзей.
-              Постоянное соединение (SSE) нужно, чтобы чужие изменения появлялись сразу.
-              Раз в запуск приложение также обращается к GitHub, проверяя наличие обновления.
-            </p>
-          </div>
-          <div>
-            <p class="font-medium text-foreground">Что хранится на сервере</p>
-            <p>
-              Анонимный идентификатор устройства, ваш код для друзей, смены (дата, время,
-              заметка) и список подписок. Имени, телефона и почты нет — регистрация не нужна.
-            </p>
-          </div>
-          <div>
-            <p class="font-medium text-foreground">Что хранится на телефоне</p>
-            <p>
-              Токен устройства, выбранный месяц, имена друзей (их знаете только вы), скрытые
-              в календаре люди, шаблоны смен и тема оформления.
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         О приложении
       </h2>
-      <div class="overflow-hidden rounded-3xl bg-card p-1.5 shadow-sm">
+      <div class="divide-y divide-border/60 overflow-hidden rounded-3xl bg-card p-1.5 shadow-sm">
+        <button
+          type="button"
+          class="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors active:bg-muted"
+          @click="infoOpen = true"
+        >
+          <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-sky-200 text-sky-800">
+            <Wifi class="size-5" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-[15px] font-semibold leading-tight">Интернет и данные</span>
+            <span class="block text-xs text-muted-foreground">{{ label }}</span>
+          </span>
+          <ChevronRight class="size-5 text-muted-foreground" />
+        </button>
         <div class="flex items-center gap-3 rounded-2xl px-3 py-3">
           <span
             class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
@@ -89,22 +66,59 @@
         </div>
       </div>
     </section>
+
+    <Drawer :open="infoOpen" @update:open="(v: boolean) => (infoOpen = v)">
+      <DrawerContent class="h-auto max-h-[80dvh] pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <DrawerTitle class="px-1 pb-3 pt-2 text-lg">Интернет и данные</DrawerTitle>
+        <DrawerDescription class="sr-only">Зачем приложению нужен интернет и какие данные оно хранит</DrawerDescription>
+        <div class="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-1 pb-1 text-sm text-muted-foreground">
+          <div>
+            <p class="mb-1 text-[15px] font-semibold text-foreground">Зачем нужен интернет</p>
+            <p>
+              Чтобы вы и ваши друзья видели актуальные графики друг друга. Когда кто-то меняет
+              смену, у остальных она обновляется сама. Без интернета приложение работает, но
+              показывает последний сохранённый график — он может устареть.
+            </p>
+          </div>
+          <div>
+            <p class="mb-1 text-[15px] font-semibold text-foreground">Что мы храним</p>
+            <p>
+              Только ваши смены (дата, время и заметка) и список друзей, на которых вы подписаны.
+              Ни имени, ни телефона, ни почты мы не спрашиваем — регистрация не нужна.
+            </p>
+          </div>
+          <div>
+            <p class="mb-1 text-[15px] font-semibold text-foreground">Что остаётся на телефоне</p>
+            <p>
+              Последний загруженный график, ваши шаблоны смен, имена друзей (их видите только
+              вы) и тема оформления. Это помогает открывать приложение без ожидания.
+            </p>
+          </div>
+          <div>
+            <p class="mb-1 text-[15px] font-semibold text-foreground">Обновления</p>
+            <p>При запуске приложение проверяет, вышла ли новая версия, и обновляется само.</p>
+          </div>
+          <p class="rounded-2xl bg-secondary p-3 text-foreground">Сейчас: {{ label }}</p>
+        </div>
+      </DrawerContent>
+    </Drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Check, Info, Moon, Smartphone, Sun } from '@lucide/vue'
-import { computed } from 'vue'
-import ConnectionDot from '@/components/ConnectionDot.vue'
+import { Check, ChevronRight, Info, Moon, Smartphone, Sun, Wifi } from '@lucide/vue'
+import { computed, ref } from 'vue'
+import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { useConnection } from '@/composables/useConnection'
 import { useTheme, type Theme } from '@/composables/useTheme'
 
 const version = __APP_VERSION__
 const { theme, setTheme } = useTheme()
 
+const infoOpen = ref(false)
 const connection = useConnection()
 const label = computed(
-  () => ({ online: 'Подключено к серверу', connecting: 'Подключение…', offline: 'Нет связи с сервером' })[connection.value],
+  () => ({ online: 'Есть связь с сервером', connecting: 'Подключение…', offline: 'Нет связи — график может быть неактуальным' })[connection.value],
 )
 
 const options = [

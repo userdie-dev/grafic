@@ -81,9 +81,10 @@ describe('SharePage', () => {
 describe('SettingsPage', () => {
   it('lists theme options, marks the current one and switches theme', async () => {
     const w = mount(SettingsPage)
-    const buttons = w.findAll('button')
+    const buttons = w.findAll('button').slice(0, 3) // theme options; the 4th opens the network info
     expect(buttons).toHaveLength(3)
     expect(w.text()).toContain('0.0.0-test')
+    expect(w.text()).toContain('Интернет и данные')
 
     const marked = () => buttons.map((b) => b.find('svg.size-3\\.5').exists())
     expect(marked().filter(Boolean)).toHaveLength(1)
