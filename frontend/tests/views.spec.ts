@@ -1,14 +1,14 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CalendarDate } from '@internationalized/date'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 const h = vi.hoisted(() => ({ s: null as any, copy: vi.fn() }))
 
 vi.mock('@/composables/useSchedule', () => ({
   ME: 'me',
-  COLORS: ['#111'],
+  COLORS: ['#111', '#222'],
   useSchedule: () => h.s,
 }))
 vi.mock('@vueuse/core', async (orig) => ({
@@ -20,6 +20,7 @@ vi.mock('@/lib/api', () => ({ registerDevice: vi.fn(), setToken: vi.fn() }))
 import ShareView from '@/components/ShareView.vue'
 import MonthCalendar from '@/components/MonthCalendar.vue'
 import CalendarPage from '@/pages/CalendarPage.vue'
+import FriendEditor from '@/components/FriendEditor.vue'
 import { useScheduleStore } from '@/stores/schedule'
 
 const entry = (who: string, date: string, start = '09:00') => ({
@@ -36,6 +37,7 @@ beforeEach(() => {
     shareCode: 'ABC234',
     month: new Date(2030, 0, 15),
     byDate: {} as Record<string, unknown[]>,
+    commonOff: [] as string[],
     hidden: [] as string[],
     myShifts: [] as unknown[],
     people: [
@@ -43,6 +45,9 @@ beforeEach(() => {
       { id: 'o1', name: 'Аня', color: '#222', subId: 's1' },
     ],
     regenerate: vi.fn(),
+    rename: vi.fn(),
+    setColor: vi.fn(),
+    removeFriend: vi.fn(),
     addFriend: vi.fn().mockResolvedValue(true),
     toggle: vi.fn(),
     saveShifts: vi.fn(),
@@ -69,10 +74,25 @@ describe('ShareView', () => {
     expect(w.find('button[aria-label="Скопировать"]').exists()).toBe(true)
   })
 
-  it('regenerates the code', async () => {
+  it('asks for confirmation before regenerating the code', async () => {
     const w = mount(ShareView)
-    await w.findAll('button').find((b) => b.text().includes('Новый код'))!.trigger('click')
-    expect(h.s.regenerate).toHaveBeenCalled()
+    const btn = () => w.findAll('button').find((b) => b.text().includes('Новый код') || b.text().includes('Заменить'))!
+    await btn().trigger('click')
+    expect(h.s.regenerate).not.toHaveBeenCalled()
+    expect(btn().text()).toContain('Заменить')
+    await btn().trigger('click')
+    expect(h.s.regenerate).toHaveBeenCalledTimes(1)
+    expect(btn().text()).toContain('Новый код')
+  })
+
+  it('drops the confirmation if it is not confirmed in time', async () => {
+    vi.useFakeTimers()
+    const w = mount(ShareView)
+    const btn = () => w.findAll('button').find((b) => b.text().includes('Новый код') || b.text().includes('Заменить'))!
+    await btn().trigger('click')
+    await vi.advanceTimersByTimeAsync(4001)
+    expect(btn().text()).toContain('Новый код')
+    expect(h.s.regenerate).not.toHaveBeenCalled()
   })
 
   it('validates the code length before enabling submit', async () => {
@@ -118,6 +138,18 @@ describe('MonthCalendar', () => {
     mount(MonthCalendar, { props: { month, entries }, attachTo: document.body })
   const cells = () => [...document.querySelectorAll<HTMLElement>('[data-reka-calendar-cell-trigger]')]
   const cell = (iso: string) => cells().find((c) => c.getAttribute('data-value') === iso)!
+
+  it('tints days when everyone is off', async () => {
+    const w = mount(MonthCalendar, { props: { month: new Date(2030, 0, 15), entries: {}, freeDays: ['2030-01-12'] }, attachTo: document.body })
+    await flushPromises()
+    expect(cell('2030-01-12').className).toContain('bg-emerald-500/20')
+    expect(cell('2030-01-13').className).not.toContain('bg-emerald-500/20')
+    w.unmount()
+    const bare = mountCal()
+    await flushPromises()
+    expect(cell('2030-01-12').className).not.toContain('bg-emerald-500/20')
+    bare.unmount()
+  })
 
   it('renders a fixed 6-week Monday-first grid with entries', async () => {
     const many = Array.from({ length: 5 }, (_, i) => entry(`p${i}`, '2030-01-10', `0${i}:00`))
@@ -219,13 +251,51 @@ describe('MonthCalendar', () => {
 
 describe('CalendarPage', () => {
   const stubs = {
-    MonthCalendar: { props: ['month', 'entries'], emits: ['select'], template: '<button id="cal" @click="$emit(\'select\', \'2030-01-10\')" />' },
+    MonthCalendar: { props: ['month', 'entries', 'freeDays'], emits: ['select'], template: '<button id="cal" @click="$emit(\'select\', \'2030-01-10\')" />' },
+    FriendEditor: {
+      props: ['person', 'hidden', 'removable'],
+      emits: ['close', 'save', 'toggle', 'remove'],
+      template: '<div id="fe">{{ person.id }}|{{ hidden }}|{{ removable }}<i id="fsave" @click="$emit(\'save\', \'Анна\', \'#abc\')" /><i id="ftoggle" @click="$emit(\'toggle\')" /><i id="fremove" @click="$emit(\'remove\')" /><i id="fclose" @click="$emit(\'close\')" /></div>',
+    },
     ShiftEditor: {
       props: ['date', 'shifts', 'friends'],
       emits: ['close', 'save', 'remove'],
       template: '<div id="ed">{{ date }}|{{ shifts.length }}|{{ friends.length }}<i id="close" @click="$emit(\'close\')" /><i id="save" @click="$emit(\'save\', [1], [\'x\'])" /><i id="rm" @click="$emit(\'remove\', \'r\')" /></div>',
     },
   }
+
+  it('shows the legend only when there are common days off', async () => {
+    const w = mount(CalendarPage, { global: { stubs } })
+    expect(w.text()).not.toContain('Общий выходной')
+    h.s.commonOff = ['2030-01-12']
+    await w.vm.$nextTick()
+    expect(w.text()).toContain('Общий выходной')
+  })
+
+  it('opens the friend editor on a friend tap and wires its events', async () => {
+    const w = mount(CalendarPage, { global: { stubs } })
+    expect(w.find('#fe').exists()).toBe(false)
+    await w.findAll('section > div button')[1]!.trigger('click')
+    expect(h.s.toggle).not.toHaveBeenCalled()
+    expect(w.get('#fe').text()).toContain('o1|false|true')
+    await w.get('#fsave').trigger('click')
+    expect(h.s.rename).toHaveBeenCalledWith('o1', 'Анна')
+    expect(h.s.setColor).toHaveBeenCalledWith('o1', '#abc')
+    await w.get('#ftoggle').trigger('click')
+    expect(h.s.toggle).toHaveBeenCalledWith('o1')
+    await w.get('#fremove').trigger('click')
+    expect(h.s.removeFriend).toHaveBeenCalledWith('s1')
+    await w.get('#fclose').trigger('click')
+    expect(w.find('#fe').exists()).toBe(false)
+  })
+
+  it('opens the editor for a demo friend without allowing removal', async () => {
+    h.s.people = [...h.s.people, { id: 'mock-x', name: 'Демо', color: '#333', subId: '' }]
+    const w = mount(CalendarPage, { global: { stubs } })
+    await w.findAll('section > div button')[2]!.trigger('click')
+    expect(w.get('#fe').text()).toContain('mock-x')
+    expect(w.get('#fe').text()).toContain('mock-x|false|false')
+  })
 
   it('lists people, toggles them and shows struck-out hidden ones', async () => {
     h.s.hidden = ['o1']
@@ -266,5 +336,89 @@ describe('CalendarPage', () => {
     const w = mount(CalendarPage, { global: { stubs } })
     await w.get('#cal').trigger('click')
     expect(w.get('#ed').text()).toBe('2030-01-10|0|0')
+  })
+})
+
+describe('FriendEditor', () => {
+  const body = () => document.body
+  const person = { id: 'o1', name: 'Аня', color: '#222' }
+  const btn = (text: string) => [...body().querySelectorAll('button')].find((b) => b.textContent!.includes(text))!
+  const input = () => body().querySelector<HTMLInputElement>('input[placeholder="Имя"]')!
+  let w: ReturnType<typeof mount>
+  const open = async (hidden = false) => {
+    w = mount(FriendEditor, { props: { person, hidden, removable: true }, attachTo: body() })
+    await flushPromises()
+  }
+  afterEach(() => {
+    w?.unmount()
+    body().innerHTML = ''
+    vi.useRealTimers()
+  })
+
+  it('saves a new name and colour, then closes after the animation', async () => {
+    vi.useFakeTimers()
+    await open()
+    expect(input().value).toBe('Аня')
+    input().value = '  Анна '
+    input().dispatchEvent(new Event('input', { bubbles: true }))
+    await nextTick()
+    body().querySelectorAll<HTMLElement>('[role="radio"]')[0]!.click()
+    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(w.emitted('save')).toEqual([['Анна', '#111']])
+    expect(w.emitted('close')).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(250)
+    expect(w.emitted('close')).toHaveLength(1)
+  })
+
+  it('keeps the old name when it is blank', async () => {
+    await open()
+    input().value = '   '
+    input().dispatchEvent(new Event('input', { bubbles: true }))
+    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(w.emitted('save')).toEqual([['Аня', '#222']])
+  })
+
+  it('shows and flips visibility', async () => {
+    await open(true)
+    const sw = body().querySelector<HTMLElement>('[role="switch"]')!
+    expect(sw.getAttribute('aria-checked')).toBe('false')
+    sw.click()
+    expect(w.emitted('toggle')).toHaveLength(1)
+  })
+
+  it('hides the delete button when removal is not allowed', async () => {
+    w = mount(FriendEditor, { props: { person, hidden: false, removable: false }, attachTo: body() })
+    await flushPromises()
+    expect(btn('Удалить')).toBeUndefined()
+  })
+
+  it('removes only after a second tap', async () => {
+    await open()
+    btn('Удалить').click()
+    await flushPromises()
+    expect(w.emitted('remove')).toBeUndefined()
+    btn('Точно удалить?').click()
+    await flushPromises()
+    expect(w.emitted('remove')).toHaveLength(1)
+  })
+
+  it('closes when the drawer is dismissed', async () => {
+    vi.useFakeTimers()
+    await open()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await vi.advanceTimersByTimeAsync(250)
+    expect(w.emitted('close')).toHaveLength(1)
+  })
+
+  it('does not emit close after unmounting', async () => {
+    vi.useFakeTimers()
+    await open()
+    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    w.unmount()
+    await vi.advanceTimersByTimeAsync(250)
+    expect(w.emitted('close')).toBeUndefined()
   })
 })

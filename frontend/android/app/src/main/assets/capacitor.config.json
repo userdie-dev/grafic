@@ -1,5 +1,10 @@
 {
 	"appId": "com.grafic.app",
 	"appName": "График смен",
-	"webDir": "dist"
+	"webDir": "dist",
+	"plugins": {
+		"CapacitorUpdater": {
+			"autoUpdate": false
+		}
+	}
 }

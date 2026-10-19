@@ -42,17 +42,17 @@
               :key="p.id"
               type="button"
               size="sm"
-              :variant="preset.id === p.id && !creating ? 'default' : 'secondary'"
+              variant="secondary" :class="tone(preset.id === p.id && !creating)"
               class="rounded-full"
               @click="setPreset(p)"
             >{{ p.label }}</Button>
-            <Button type="button" size="sm" :variant="creating ? 'default' : 'outline'" class="rounded-full" aria-label="Создать свой пресет" @click="creating = !creating"><RiAddLine /></Button>
+            <Button type="button" size="sm" variant="secondary" :class="tone(creating)" class="rounded-full" aria-label="Создать свой пресет" @click="creating = !creating"><RiAddLine /></Button>
           </div>
           <div v-if="creating" class="space-y-2 rounded-2xl border p-3">
             <Input v-model="draft.label" maxlength="20" placeholder="Название пресета" class="h-10" />
             <div class="flex gap-1.5">
-              <Button type="button" size="sm" :variant="draft.mode === 'cycle' ? 'default' : 'secondary'" class="flex-1 rounded-full" @click="draft.mode = 'cycle'">Через N дней</Button>
-              <Button type="button" size="sm" :variant="draft.mode === 'weekdays' ? 'default' : 'secondary'" class="flex-1 rounded-full" @click="draft.mode = 'weekdays'">По дням недели</Button>
+              <Button type="button" size="sm" variant="secondary" :class="tone(draft.mode === 'cycle')" class="flex-1 rounded-full" @click="draft.mode = 'cycle'">Через N дней</Button>
+              <Button type="button" size="sm" variant="secondary" :class="tone(draft.mode === 'weekdays')" class="flex-1 rounded-full" @click="draft.mode = 'weekdays'">По дням недели</Button>
             </div>
             <div v-if="draft.mode === 'cycle'" class="flex gap-2">
               <label class="flex-1 space-y-1 text-xs text-muted-foreground">Рабочих дней<Input v-model.number="draft.work" type="number" min="1" max="30" class="h-10 text-foreground" /></label>
@@ -64,13 +64,13 @@
                 :key="d.dow"
                 type="button"
                 size="sm"
-                :variant="draft.days.includes(d.dow) ? 'default' : 'secondary'"
+                variant="secondary" :class="tone(draft.days.includes(d.dow))"
                 class="h-9 flex-1 rounded-full px-0"
                 @click="toggleDay(d.dow)"
               >{{ d.label }}</Button>
             </div>
             <p v-if="draftProblem" class="text-sm text-destructive">{{ draftProblem }}</p>
-            <Button type="button" size="sm" class="w-full rounded-full" @click="createPreset">Сохранить пресет</Button>
+            <Button type="button" size="sm" class="w-full rounded-full bg-blue-600 text-white hover:bg-blue-600/90 dark:bg-blue-500 dark:hover:bg-blue-500/90" @click="createPreset">Сохранить пресет</Button>
           </div>
           <div class="flex gap-1.5">
             <Button
@@ -78,7 +78,7 @@
               :key="k.id"
               type="button"
               size="sm"
-              :variant="kind === k.id ? 'default' : 'secondary'"
+              variant="secondary" :class="tone(kind === k.id)"
               class="flex-1 rounded-full"
               @click="setKind(k.id)"
             >{{ k.label }}</Button>
@@ -95,7 +95,7 @@
         <Input v-model="note" maxlength="200" placeholder="Заметка" class="h-10" />
         <p v-if="problem" class="text-sm text-destructive">{{ problem }}</p>
         <div class="flex gap-2">
-          <Button size="lg" class="h-11 flex-1 rounded-full bg-foreground text-background hover:bg-foreground/90">Сохранить</Button>
+          <Button size="lg" class="h-11 flex-1 rounded-full bg-blue-600 text-white hover:bg-blue-600/90 dark:bg-blue-500 dark:hover:bg-blue-500/90">Сохранить</Button>
           <Button type="button" variant="outline" size="lg" class="h-11 rounded-full" @click="backToList">Отмена</Button>
         </div>
       </form>
@@ -139,6 +139,12 @@ const presets = usePresetsStore()
 const CLOSE_ANIMATION_MS = 200
 // without an explicit end date a cycle/weekday preset is laid out for about a year (capped at 366 shifts)
 const DEFAULT_FILL_DAYS = 366
+
+// blue toggle buttons: solid when selected, pale otherwise
+const tone = (active: boolean) =>
+  active
+    ? 'bg-blue-600 text-white hover:bg-blue-600/90 dark:bg-blue-500 dark:hover:bg-blue-500/90'
+    : 'bg-blue-100 text-blue-900 hover:bg-blue-100/80 dark:bg-blue-950 dark:text-blue-100 dark:hover:bg-blue-950/80'
 
 // the parent unmounts us on `close`, so wait for the exit animation to finish first
 const open = ref(true)

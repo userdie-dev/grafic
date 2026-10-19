@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } f
 import { api, eventsUrl } from '@/lib/api'
 import type { Shift, ShiftInput } from '@/lib/dto'
 import { gridRange } from '@/lib/dates'
+import { freeDays } from '@/lib/commonOff'
 import { MOCK_FRIENDS, USE_MOCK_FRIENDS, mockShifts } from '@/lib/mock'
 import { useScheduleStore } from '@/stores/schedule'
 import { setConnection } from '@/composables/useConnection'
@@ -51,7 +52,7 @@ export function useSchedule() {
     ...subs.value.map((s, i) => ({
       id: s.ownerId,
       name: store.state.labels[s.ownerId] ?? 'Друг',
-      color: COLORS[(i + 1) % COLORS.length]!,
+      color: store.state.colors[s.ownerId] ?? COLORS[(i + 1) % COLORS.length]!,
       subId: s.id,
     })),
     ...mockPeople.map((m, i) => ({ ...m, color: COLORS[(subs.value.length + i + 1) % COLORS.length]! })),
@@ -74,6 +75,16 @@ export function useSchedule() {
     })
     for (const list of Object.values(map)) list.sort((a, b) => a.shift.start.localeCompare(b.shift.start))
     return map
+  })
+
+  /** days of the shown grid when every visible person is off; empty until all their schedules have loaded */
+  const commonOff = computed(() => {
+    const visible = people.value.filter((p) => !store.state.hidden.includes(p.id))
+    const loaded = people.value.every((p, i) => p.id === ME || p.id.startsWith('mock-') || friendQueries.value[i - 1]?.data)
+    if (!loaded || !mineQuery.data.value) return []
+    // with a single visible person every free day would be "common"
+    if (visible.length < 2) return []
+    return freeDays(Object.keys(byDate.value), range.value.from, range.value.to)
   })
 
   const invalidateMine = () => qc.invalidateQueries({ queryKey: ['shifts', ME] })
@@ -116,11 +127,13 @@ export function useSchedule() {
     loading: computed(() => mineQuery.isFetching.value || subsQuery.isFetching.value),
     people,
     byDate,
+    commonOff,
     myShifts,
     error,
     shiftMonth: store.shiftMonth,
     toggle: store.toggle,
     rename: store.rename,
+    setColor: store.setColor,
     saveShifts: (items: ShiftInput[], removeIds: string[] = []) => save.mutate({ items, removeIds }),
     deleteShift: (id: string) => remove.mutate(id),
     addFriend: async (code: string, label: string) => {

@@ -125,6 +125,45 @@ describe('useSchedule', () => {
     expect(day.some((e) => e.who.startsWith('mock-'))).toBe(true)
   })
 
+  it('finds days when every visible person is off', async () => {
+    withDevice()
+    vi.mocked(api.subscriptions).mockResolvedValue([{ id: 's1', ownerId: 'o1' }])
+    vi.mocked(api.myShifts).mockResolvedValue([shift('m1', '2030-01-08', '12:00')])
+    vi.mocked(api.friendShifts).mockResolvedValue([shift('f1', '2030-01-09', '08:00')])
+    const { result } = setup(useSchedule)
+    await flushPromises()
+    // mock friends are on shift on Mondays; hide them to look at me and the real friend only
+    result.people.filter((p) => p.id.startsWith('mock-')).forEach((p) => result.toggle(p.id))
+    await flushPromises()
+    expect(result.commonOff).not.toContain('2030-01-08')
+    expect(result.commonOff).not.toContain('2030-01-09')
+    expect(result.commonOff).toContain('2030-01-10')
+
+    // a single visible person has no one to coincide with
+    result.toggle('o1')
+    await flushPromises()
+    expect(result.commonOff).toEqual([])
+  })
+
+  it('reports no common days off until a friend schedule has loaded', async () => {
+    withDevice()
+    vi.mocked(api.subscriptions).mockResolvedValue([{ id: 's1', ownerId: 'o1' }])
+    vi.mocked(api.friendShifts).mockReturnValue(new Promise(() => {}))
+    const { result } = setup(useSchedule)
+    await flushPromises()
+    expect(result.commonOff).toEqual([])
+  })
+
+  it('lets a local colour override the default one', async () => {
+    withDevice()
+    vi.mocked(api.subscriptions).mockResolvedValue([{ id: 's1', ownerId: 'o1' }])
+    const { result } = setup(useSchedule)
+    await flushPromises()
+    expect(result.people[1]!.color).toBe(COLORS[1])
+    result.setColor('o1', '#abcdef')
+    expect(result.people[1]!.color).toBe('#abcdef')
+  })
+
   it('uses a local label for a mock friend', async () => {
     localStorage.setItem('grafic.store', JSON.stringify({ device, month: '2030-01-15', labels: { 'mock-anna': 'Нюта' }, hidden: [] }))
     const { result } = setup(useSchedule)

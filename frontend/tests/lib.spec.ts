@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { WEEKDAYS, gridRange, iso, monthGrid } from '@/lib/dates'
 import { MOCK_FRIENDS, mockShifts } from '@/lib/mock'
 import { BUILTIN_PRESETS, describe as describePreset, works, type Preset } from '@/lib/presets'
+import { freeDays } from '@/lib/commonOff'
 import { cn } from '@/lib/utils'
 
 describe('dates', () => {
@@ -54,4 +55,11 @@ describe('presets', () => {
     expect(works(weekly, 0, 3)).toBe(true)
     expect(works(weekly, 1, 3)).toBe(false)
   })
+})
+
+describe('freeDays', () => {
+  it('lists the days of the range that are not busy', () => {
+    expect(freeDays(['2030-01-02', '2030-01-02', '2029-12-01'], '2030-01-01', '2030-01-04')).toEqual(['2030-01-01', '2030-01-03', '2030-01-04'])
+  })
+  it('is empty when every day is busy', () => expect(freeDays(['2030-01-01'], '2030-01-01', '2030-01-01')).toEqual([]))
 })

@@ -29,9 +29,11 @@ import { computed } from 'vue'
 import { RouterView } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'
 import { useConnection } from '@/composables/useConnection'
+import { useCommonOffNotify } from '@/composables/useCommonOffNotify'
 import { useSchedule, useScheduleSync } from '@/composables/useSchedule'
 
 const s = useSchedule()
 const offline = computed(() => useConnection().value === 'offline')
 useScheduleSync()
+useCommonOffNotify()
 </script>

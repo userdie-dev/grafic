@@ -47,7 +47,8 @@
             <CalendarCellTrigger
               :day="date"
               :month="m.value"
-              class="group/day flex h-auto min-h-[4.75rem] w-full flex-col items-center justify-start gap-1.5 rounded-2xl bg-transparent px-0.5 pb-1.5 pt-1.5 font-normal transition hover:bg-transparent active:scale-95 data-[outside-view]:opacity-30 data-[selected]:bg-muted data-[selected]:hover:bg-muted data-[selected]:focus:bg-muted data-[selected]:text-foreground [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-foreground sm:min-h-28 sm:items-stretch sm:gap-1 sm:px-1.5"
+              :class="isFree(date) ? 'bg-emerald-500/20' : 'bg-transparent'"
+              class="group/day flex h-auto min-h-[4.75rem] w-full flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 pb-1.5 pt-1.5 font-normal transition hover:bg-transparent active:scale-95 data-[outside-view]:opacity-30 data-[selected]:bg-muted data-[selected]:hover:bg-muted data-[selected]:focus:bg-muted data-[selected]:text-foreground [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-foreground sm:min-h-28 sm:items-stretch sm:gap-1 sm:px-1.5"
             >
               <span class="flex size-7 items-center justify-center rounded-full text-[15px] font-medium group-data-[today]/day:bg-primary group-data-[today]/day:font-semibold group-data-[today]/day:text-primary-foreground sm:self-start">{{ date.day }}</span>
 
@@ -108,6 +109,8 @@ const MAX = 3
 const props = defineProps<{
   month: Date
   entries: Record<string, { who: string; name: string; color: string; shift: Shift }[]>
+  /** days when everyone visible is off */
+  freeDays?: string[]
 }>()
 const emit = defineEmits<{ select: [date: string] }>()
 const s = useScheduleStore()
@@ -115,6 +118,7 @@ const s = useScheduleStore()
 // months between the shown month and the current one (0 = already on it)
 const monthsFromToday = computed(() => differenceInCalendarMonths(props.month, new Date()))
 
+const isFree = (d: DateValue) => !!props.freeDays?.includes(d.toString())
 const dayEntries = (d: DateValue) => props.entries[d.toString()] ?? []
 
 const toCal =(d: Date) => new CalendarDate(d.getFullYear(), d.getMonth() + 1, 1)

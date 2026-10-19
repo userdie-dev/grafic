@@ -17,7 +17,7 @@
             <component :is="copied ? RiCheckLine : RiFileCopyLine" class="size-5" />
           </Button>
         </div>
-        <Button variant="outline" size="lg" class="h-10 w-full" @click="s.regenerate()"><RiRefreshLine /> Новый код</Button>
+        <Button variant="outline" size="lg" class="h-10 w-full" @click="askRegenerate"><RiRefreshLine /> {{ confirming ? 'Старый код перестанет работать. Заменить?' : 'Новый код' }}</Button>
       </CardContent>
     </Card>
 
@@ -56,6 +56,20 @@ async function copyCode() {
   await copy(s.shareCode)
   copied.value = true
   setTimeout(() => (copied.value = false), 1500)
+}
+
+// replacing the code is irreversible for anyone who still holds the old one, so it takes two taps
+const confirming = ref(false)
+let confirmTimer: ReturnType<typeof setTimeout> | undefined
+function askRegenerate() {
+  clearTimeout(confirmTimer)
+  if (confirming.value) {
+    confirming.value = false
+    s.regenerate()
+    return
+  }
+  confirming.value = true
+  confirmTimer = setTimeout(() => (confirming.value = false), 4000)
 }
 
 const code = ref('')

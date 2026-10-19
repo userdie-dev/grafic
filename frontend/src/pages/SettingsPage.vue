@@ -38,6 +38,40 @@
 
     <section>
       <h2 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Уведомления
+      </h2>
+      <div class="overflow-hidden rounded-3xl bg-card p-1.5 shadow-sm">
+        <button
+          type="button"
+          role="switch"
+          :aria-checked="store.state.notifyCommonOff"
+          class="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors active:bg-muted"
+          @click="toggleNotify"
+        >
+          <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-200 text-emerald-800">
+            <Bell class="size-5" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-[15px] font-semibold leading-tight">Общий выходной</span>
+            <span class="block text-xs text-muted-foreground">
+              {{ notifyHint || 'Напомнить вечером накануне дня, когда выходной у вас и у всех друзей' }}
+            </span>
+          </span>
+          <span
+            class="flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors"
+            :class="store.state.notifyCommonOff ? 'bg-primary' : 'bg-muted-foreground/30'"
+          >
+            <span
+              class="size-5 rounded-full bg-white shadow transition-transform"
+              :class="store.state.notifyCommonOff ? 'translate-x-4' : ''"
+            />
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         О приложении
       </h2>
       <div class="divide-y divide-border/60 overflow-hidden rounded-3xl bg-card p-1.5 shadow-sm">
@@ -106,14 +140,32 @@
 </template>
 
 <script setup lang="ts">
-import { Check, ChevronRight, Info, Moon, Smartphone, Sun, Wifi } from '@lucide/vue'
+import { Bell, Check, ChevronRight, Info, Moon, Smartphone, Sun, Wifi } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { useConnection } from '@/composables/useConnection'
+import { notificationsSupported, requestNotifyPermission } from '@/composables/useCommonOffNotify'
 import { useTheme, type Theme } from '@/composables/useTheme'
+import { useScheduleStore } from '@/stores/schedule'
 
 const version = __APP_VERSION__
 const { theme, setTheme } = useTheme()
+
+const store = useScheduleStore()
+const notifyHint = ref('')
+async function toggleNotify() {
+  notifyHint.value = ''
+  if (store.state.notifyCommonOff) {
+    store.state.notifyCommonOff = false
+    return
+  }
+  if (!notificationsSupported()) {
+    notifyHint.value = 'Уведомления работают только в приложении на телефоне'
+    return
+  }
+  if (await requestNotifyPermission()) store.state.notifyCommonOff = true
+  else notifyHint.value = 'Разрешите уведомления для приложения в настройках телефона'
+}
 
 const infoOpen = ref(false)
 const connection = useConnection()

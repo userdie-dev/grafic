@@ -13,8 +13,12 @@ interface State {
   month: string
   /** local friend names by ownerId (the server only knows ids) */
   labels: Record<string, string>
+  /** local colour overrides by ownerId */
+  colors: Record<string, string>
   /** ids of people hidden in the calendar */
   hidden: string[]
+  /** remind the evening before a day off shared by me and all my friends */
+  notifyCommonOff: boolean
 }
 
 /**
@@ -24,7 +28,7 @@ interface State {
 export const useScheduleStore = defineStore('schedule', () => {
   const state = useLocalStorage<State>(
     'grafic.store',
-    { device: null, month: iso(new Date()), labels: {}, hidden: [] },
+    { device: null, month: iso(new Date()), labels: {}, colors: {}, hidden: [], notifyCommonOff: false },
     { mergeDefaults: true },
   )
 
@@ -63,6 +67,7 @@ export const useScheduleStore = defineStore('schedule', () => {
       state.value.hidden = h.includes(id) ? h.filter((x) => x !== id) : [...h, id]
     },
     rename: (ownerId: string, label: string) => (state.value.labels[ownerId] = label),
+    setColor: (ownerId: string, color: string) => (state.value.colors[ownerId] = color),
     setShareCode: (shareCode: string) => {
       if (state.value.device) state.value.device.shareCode = shareCode
     },
