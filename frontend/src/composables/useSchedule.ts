@@ -183,7 +183,8 @@ export function useScheduleSync() {
     eventSource,
     (es, _, onCleanup) => {
       if (!es) return
-      setConnection('connecting')
+      // no 'connecting' here: the state starts as 'connecting', and resetting it on every
+      // stream reconnect made the label flicker between states
       const onOpen = () => {
         streamOpen = true
         setConnection('online')
