@@ -87,12 +87,26 @@ describe('initUpdater', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     upd.download.mockRejectedValue(new Error('disk full'))
     await initUpdater()
-    expect(status.value).toEqual({ kind: 'error', text: 'Не удалось обновить: disk full' })
+    expect(status.value).toEqual({ kind: 'error', text: 'Не удалось скачать обновление: disk full' })
     expect(localStorage.getItem('grafic.updatingTo')).toBeNull()
 
     upd.download.mockRejectedValue('boom')
     await initUpdater()
-    expect(status.value!.text).toBe('Не удалось обновить: boom')
+    expect(status.value!.text).toBe('Не удалось скачать обновление: boom')
+    warn.mockRestore()
+  })
+
+  it('keeps the pending build when set() rejects (webview reload), reports only if still alive', async () => {
+    vi.useFakeTimers()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    upd.set.mockRejectedValue(new Error('Failed to fetch'))
+    const p = initUpdater()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(localStorage.getItem('grafic.updatingTo')).not.toBeNull()
+    await vi.advanceTimersByTimeAsync(3000)
+    await p
+    expect(status.value!.text).toBe('Не удалось применить обновление: Failed to fetch')
+    expect(localStorage.getItem('grafic.updatingTo')).toBeNull()
     warn.mockRestore()
   })
 

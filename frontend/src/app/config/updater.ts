@@ -55,14 +55,25 @@ export async function initUpdater() {
   }
   if (!remote.build || remote.build === __BUILD_ID__) return
 
+  let bundle
   try {
     setUpdateStatus({ kind: 'downloading', text: 'Скачиваем обновление…' })
-    const bundle = await CapacitorUpdater.download({ url: remote.url, version: remote.build })
-    pendingBuild(remote.build)
+    bundle = await CapacitorUpdater.download({ url: remote.url, version: remote.build })
+  } catch (e) {
+    console.warn('update download failed', e)
+    setUpdateStatus({ kind: 'error', text: `Не удалось скачать обновление: ${errorText(e)}` }, 10000)
+    return
+  }
+
+  pendingBuild(remote.build)
+  try {
     await CapacitorUpdater.set(bundle)
   } catch (e) {
-    console.warn('update failed', e)
+    // set() reloads the webview, which can reject the pending bridge call ("Failed to fetch") even
+    // though the switch worked. If the page is still alive a moment later, it really failed.
+    console.warn('update set rejected', e)
+    await new Promise((r) => setTimeout(r, 3000))
     pendingBuild('')
-    setUpdateStatus({ kind: 'error', text: `Не удалось обновить: ${errorText(e)}` }, 10000)
+    setUpdateStatus({ kind: 'error', text: `Не удалось применить обновление: ${errorText(e)}` }, 10000)
   }
 }
