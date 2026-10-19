@@ -70,12 +70,8 @@
               >{{ d.label }}</Button>
             </div>
             <div class="flex gap-2">
-              <label class="flex-1 space-y-1 text-xs text-muted-foreground">Дневная: с<TimePicker v-model="draft.dayStart" /></label>
+              <label class="flex-1 space-y-1 text-xs text-muted-foreground">Время смены: с<TimePicker v-model="draft.dayStart" /></label>
               <label class="flex-1 space-y-1 text-xs text-muted-foreground">до<TimePicker v-model="draft.dayEnd" /></label>
-            </div>
-            <div class="flex gap-2">
-              <label class="flex-1 space-y-1 text-xs text-muted-foreground">Ночная: с<TimePicker v-model="draft.nightStart" /></label>
-              <label class="flex-1 space-y-1 text-xs text-muted-foreground">до<TimePicker v-model="draft.nightEnd" /></label>
             </div>
             <p v-if="draftProblem" class="text-sm text-destructive">{{ draftProblem }}</p>
             <Button type="button" size="sm" class="w-full rounded-full" @click="createPreset">Сохранить пресет</Button>
@@ -118,7 +114,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref } from 'vue'
-import { addDays, addWeeks, endOfMonth, format, getDay, parseISO } from 'date-fns'
+import { addDays, addWeeks, format, getDay, parseISO } from 'date-fns'
 import { RiAddLine, RiArrowLeftLine, RiDeleteBinLine, RiEditLine } from '@remixicon/vue'
 import { Moon } from '@lucide/vue'
 import { isNightShift } from '@/lib/night'
@@ -150,6 +146,8 @@ const WEEK = [1, 2, 3, 4, 5, 6, 0].map((dow) => ({ dow, label: ['Вс', 'Пн', 
 const presets = usePresetsStore()
 
 const CLOSE_ANIMATION_MS = 200
+// without an explicit end date a cycle/weekday preset is laid out for about a year (capped at 366 shifts)
+const DEFAULT_FILL_DAYS = 366
 
 // the parent unmounts us on `close`, so wait for the exit animation to finish first
 const open = ref(true)
@@ -199,8 +197,6 @@ const draft = reactive({
   days: [1, 2, 3, 4, 5],
   dayStart: '08:00',
   dayEnd: '20:00',
-  nightStart: '20:00',
-  nightEnd: '08:00',
 })
 
 function toggleDay(d: number) {
@@ -216,7 +212,7 @@ function createPreset() {
     draftProblem.value = 'Выберите хотя бы один день недели'
     return
   }
-  if (!draft.dayStart || !draft.dayEnd || !draft.nightStart || !draft.nightEnd) {
+  if (!draft.dayStart || !draft.dayEnd) {
     draftProblem.value = 'Укажите время смен'
     return
   }
@@ -229,7 +225,7 @@ function createPreset() {
         ? { type: 'cycle', work: draft.work, off: draft.off }
         : { type: 'weekdays', days: [...draft.days] },
     day: [draft.dayStart, draft.dayEnd],
-    night: [draft.nightStart, draft.nightEnd],
+    night: ['20:00', '08:00'],
   })
   draft.label = ''
   setPreset(created)
@@ -270,7 +266,7 @@ function submit() {
       d = addWeeks(d, 1)
     }
   } else {
-    const last = repeatUntil.value ? parseISO(repeatUntil.value) : endOfMonth(first)
+    const last = repeatUntil.value ? parseISO(repeatUntil.value) : addDays(first, DEFAULT_FILL_DAYS - 1)
     for (let d = first, i = 0; d <= last; d = addDays(d, 1), i++) {
       if (items.length >= 366) {
         problem.value = 'Слишком длинный период (максимум 366 смен)'

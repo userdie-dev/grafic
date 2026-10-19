@@ -217,7 +217,7 @@ describe('adding shifts', () => {
     expect((saved()[0] as any)[0]).toHaveLength(366)
   })
 
-  it('fills a cycle preset to the end of the month by default', async () => {
+  it('fills a cycle preset across months by default', async () => {
     await mountEditor()
     await openAdd()
     await click(btn('2/2'))
@@ -225,7 +225,9 @@ describe('adding shifts', () => {
     expect(body().textContent).toContain('Заполнить график до')
     await submit()
     const dates = (saved()[0] as any)[0].map((i: any) => i.date)
-    expect(dates).toEqual(['2030-01-07', '2030-01-08', '2030-01-11', '2030-01-12', '2030-01-15', '2030-01-16', '2030-01-19', '2030-01-20', '2030-01-23', '2030-01-24', '2030-01-27', '2030-01-28', '2030-01-31'])
+    expect(dates.slice(0, 8)).toEqual(['2030-01-07', '2030-01-08', '2030-01-11', '2030-01-12', '2030-01-15', '2030-01-16', '2030-01-19', '2030-01-20'])
+    expect(dates).toContain('2030-02-04')
+    expect(dates).toContain('2030-02-05')
     expect((saved()[0] as any)[0][0]).toMatchObject({ start: '08:00', end: '20:00' })
   })
 
