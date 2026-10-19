@@ -13,6 +13,7 @@
   "dependencies": {
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",
+    "@capgo/capacitor-updater": "^8.53.0",
     "@internationalized/date": "^3.12.4",
     "@lucide/vue": "^1.59.0",
     "@remixicon/vue": "^4.9.0",

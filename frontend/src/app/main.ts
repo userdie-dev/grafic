@@ -8,6 +8,9 @@ import { router } from './router'
 import { vueQueryOptions } from './config/query'
 import { initTheme } from '@/composables/useTheme'
 
+import { initUpdater } from './config/updater'
+
 initTheme()
+void initUpdater()
 
 createApp(App).use(createPinia()).use(router).use(VueQueryPlugin, vueQueryOptions).mount('#app')

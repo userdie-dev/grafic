@@ -1,0 +1,72 @@
+name: Android release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm ci
+
+      - name: Build web app
+        run: npm run build-only
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          BUILD_ID: build-${{ github.run_number }}
+
+      # В репозитории закоммичена только часть android-проекта (без gradle-файлов),
+      # поэтому нативный проект пересоздаётся.
+      - name: Generate Android project
+        run: |
+          rm -rf android
+          npx cap add android
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk grafic-build-${{ github.run_number }}.apk
+
+      # OTA-бандл веб-части и манифест версии для автообновления в приложении
+      - name: Package OTA bundle
+        run: |
+          (cd dist && zip -r ../dist.zip .)
+          echo "{\"build\":\"build-${{ github.run_number }}\",\"url\":\"https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/dist.zip\"}" > version.json
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            frontend/grafic-build-${{ github.run_number }}.apk
+            frontend/dist.zip
+            frontend/version.json
+          generate_release_notes: true
