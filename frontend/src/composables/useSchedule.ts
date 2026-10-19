@@ -6,6 +6,7 @@ import type { Shift, ShiftInput } from '@/lib/dto'
 import { gridRange } from '@/lib/dates'
 import { MOCK_FRIENDS, USE_MOCK_FRIENDS, mockShifts } from '@/lib/mock'
 import { useScheduleStore } from '@/stores/schedule'
+import { setConnection } from '@/composables/useConnection'
 
 export const COLORS = ['#2563eb', '#16a34a', '#d97706', '#db2777', '#7c3aed', '#0891b2', '#dc2626', '#65a30d']
 export const ME = 'me'
@@ -140,7 +141,7 @@ export function useScheduleSync() {
   const store = useScheduleStore()
   const qc = useQueryClient()
 
-  store.ensureDevice()
+  store.ensureDevice().catch(() => setConnection('offline'))
 
   const url = computed(() => (store.state.device ? eventsUrl(store.state.device.token) : undefined))
   const { eventSource } = useEventSource(url, ['schedule.changed'], { autoReconnect: true })
@@ -150,6 +151,11 @@ export function useScheduleSync() {
     eventSource,
     (es, _, onCleanup) => {
       if (!es) return
+      setConnection('connecting')
+      const onOpen = () => setConnection('online')
+      const onError = () => setConnection('offline')
+      es.addEventListener('open', onOpen)
+      es.addEventListener('error', onError)
       const handler = (e: Event) => {
         try {
           const { ownerId } = JSON.parse((e as MessageEvent).data)
@@ -159,7 +165,11 @@ export function useScheduleSync() {
         }
       }
       es.addEventListener('schedule.changed', handler)
-      onCleanup(() => es.removeEventListener('schedule.changed', handler))
+      onCleanup(() => {
+        es.removeEventListener('schedule.changed', handler)
+        es.removeEventListener('open', onOpen)
+        es.removeEventListener('error', onError)
+      })
     },
     { immediate: true },
   )

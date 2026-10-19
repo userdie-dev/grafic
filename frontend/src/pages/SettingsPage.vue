@@ -38,6 +38,43 @@
 
     <section>
       <h2 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Сервер и данные
+      </h2>
+      <div class="space-y-3 overflow-hidden rounded-3xl bg-card p-4 shadow-sm">
+        <div class="flex items-center gap-3">
+          <ConnectionDot />
+          <span class="flex-1 text-[15px] font-semibold">{{ label }}</span>
+        </div>
+        <div class="space-y-3 text-sm text-muted-foreground">
+          <div>
+            <p class="font-medium text-foreground">Как используется сеть</p>
+            <p>
+              Приложение хранит ваши смены на сервере, чтобы друзья могли видеть график по коду.
+              Запросы идут к серверу графика: загрузка и сохранение смен, подписки на друзей.
+              Постоянное соединение (SSE) нужно, чтобы чужие изменения появлялись сразу.
+              Раз в запуск приложение также обращается к GitHub, проверяя наличие обновления.
+            </p>
+          </div>
+          <div>
+            <p class="font-medium text-foreground">Что хранится на сервере</p>
+            <p>
+              Анонимный идентификатор устройства, ваш код для друзей, смены (дата, время,
+              заметка) и список подписок. Имени, телефона и почты нет — регистрация не нужна.
+            </p>
+          </div>
+          <div>
+            <p class="font-medium text-foreground">Что хранится на телефоне</p>
+            <p>
+              Токен устройства, выбранный месяц, имена друзей (их знаете только вы), скрытые
+              в календаре люди, шаблоны смен и тема оформления.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         О приложении
       </h2>
       <div class="overflow-hidden rounded-3xl bg-card p-1.5 shadow-sm">
@@ -57,10 +94,18 @@
 
 <script setup lang="ts">
 import { Check, Info, Moon, Smartphone, Sun } from '@lucide/vue'
+import { computed } from 'vue'
+import ConnectionDot from '@/components/ConnectionDot.vue'
+import { useConnection } from '@/composables/useConnection'
 import { useTheme, type Theme } from '@/composables/useTheme'
 
 const version = __APP_VERSION__
 const { theme, setTheme } = useTheme()
+
+const connection = useConnection()
+const label = computed(
+  () => ({ online: 'Подключено к серверу', connecting: 'Подключение…', offline: 'Нет связи с сервером' })[connection.value],
+)
 
 const options = [
   { value: 'light', label: 'Светлая', hint: 'Всегда светлое оформление', icon: Sun, tint: 'bg-amber-200 text-amber-800' },

@@ -5,6 +5,7 @@
       <RouterView />
     </main>
 
+    <ConnectionDot class="fixed right-3 top-[calc(0.75rem+max(env(safe-area-inset-top),var(--safe-area-inset-top,0px)))] z-30" />
     <AppNav />
   </div>
 </template>
@@ -12,6 +13,7 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'
+import ConnectionDot from '@/components/ConnectionDot.vue'
 import { useSchedule, useScheduleSync } from '@/composables/useSchedule'
 
 const s = useSchedule()

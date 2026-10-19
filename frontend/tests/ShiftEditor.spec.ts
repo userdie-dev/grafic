@@ -131,7 +131,7 @@ describe('editing an existing shift', () => {
     await edit()
     await submit()
     expect(saved()[0]).toEqual([[{ date: '2030-01-07', start: '09:00', end: '18:00', note: 'Заметка' }], []])
-    expect(body().textContent).toContain('График') // back to the list
+    expect(body().textContent).toContain('Смены на выбранный день') // back to the list
   })
 
   it('removes the old row when the start time changed', async () => {
@@ -175,20 +175,6 @@ describe('editing an existing shift', () => {
 })
 
 describe('adding shifts', () => {
-  const setDate = async (iso: string) => {
-    w.findComponent({ name: 'DatePicker' }).vm.$emit('update:modelValue', iso)
-    await flushPromises()
-  }
-
-  it('saves a single weekly shift with the default times', async () => {
-    await mountEditor()
-    await openAdd()
-    expect(body().textContent).toContain('07.01.2030')
-    expect(body().textContent).not.toContain('Заполнить график до')
-    await submit()
-    expect(saved()[0]).toEqual([[{ date: '2030-01-07', start: '09:00', end: '18:00', note: null }], []])
-  })
-
   it('saves an edited end time', async () => {
     await mountEditor()
     await openAdd()
@@ -199,22 +185,15 @@ describe('adding shifts', () => {
     expect((saved()[0] as any)[0][0]).toMatchObject({ start: '09:00', end: '19:30' })
   })
 
-  it('repeats weekly until the chosen date', async () => {
+  it('repeats a plain shift weekly for a year', async () => {
     await mountEditor()
     await openAdd()
-    await setDate('2030-01-21')
     await input(inputs().find((i) => i.placeholder === 'Заметка')!, 'Смена')
     await submit()
-    expect((saved()[0] as any)[0].map((i: any) => i.date)).toEqual(['2030-01-07', '2030-01-14', '2030-01-21'])
-    expect((saved()[0] as any)[0][0].note).toBe('Смена')
-  })
-
-  it('caps weekly repetition at 366 items', async () => {
-    await mountEditor()
-    await openAdd()
-    await setDate('2050-01-01')
-    await submit()
-    expect((saved()[0] as any)[0]).toHaveLength(366)
+    const items = (saved()[0] as any)[0]
+    expect(items.slice(0, 3).map((i: any) => i.date)).toEqual(['2030-01-07', '2030-01-14', '2030-01-21'])
+    expect(items).toHaveLength(53)
+    expect(items[0].note).toBe('Смена')
   })
 
   it('fills a cycle preset across months by default', async () => {
@@ -231,27 +210,17 @@ describe('adding shifts', () => {
     expect((saved()[0] as any)[0][0]).toMatchObject({ start: '08:00', end: '20:00' })
   })
 
-  it('fills weekday presets until a chosen date and supports night shifts', async () => {
+  it('fills weekday presets and supports night shifts', async () => {
     await mountEditor()
     await openAdd()
     await click(btn('5/2'))
     expect(body().textContent).toContain('Пн–Пт рабочие')
     await click(btn('Ночные'))
-    await setDate('2030-01-13')
     await submit()
     const items = (saved()[0] as any)[0]
-    expect(items.map((i: any) => i.date)).toEqual(['2030-01-07', '2030-01-08', '2030-01-09', '2030-01-10', '2030-01-11'])
+    expect(items.slice(0, 5).map((i: any) => i.date)).toEqual(['2030-01-07', '2030-01-08', '2030-01-09', '2030-01-10', '2030-01-11'])
+    expect(items[5].date).toBe('2030-01-14')
     expect(items[0]).toMatchObject({ start: '22:00', end: '06:00' })
-  })
-
-  it('refuses periods longer than 366 shifts', async () => {
-    await mountEditor()
-    await openAdd()
-    await click(btn('6/1'))
-    await setDate('2050-01-01')
-    await submit()
-    expect(body().textContent).toContain('Слишком длинный период')
-    expect(w.emitted('save')).toBeUndefined()
   })
 
   it('switching back to the plain preset restores its times', async () => {

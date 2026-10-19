@@ -36,6 +36,7 @@ vi.mock('@vueuse/core', async (orig) => {
 
 import { api, registerDevice } from '@/lib/api'
 import { COLORS, ME, useSchedule, useScheduleSync } from '@/composables/useSchedule'
+import { useConnection } from '@/composables/useConnection'
 import { useScheduleStore } from '@/stores/schedule'
 
 const device = { userId: 'u1', token: 'tok', shareCode: 'ABC234' }
@@ -265,6 +266,26 @@ describe('useScheduleSync', () => {
     spy.mockClear()
     es.current!.dispatchEvent(new MessageEvent('schedule.changed', { data: 'not json' }))
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('tracks the backend connection state from the event stream', async () => {
+    vi.mocked(registerDevice).mockResolvedValue(device)
+    const conn = useConnection()
+    setup(() => useScheduleSync())
+    await flushPromises()
+    expect(conn.value).toBe('connecting')
+    es.current!.dispatchEvent(new Event('open'))
+    expect(conn.value).toBe('online')
+    es.current!.dispatchEvent(new Event('error'))
+    expect(conn.value).toBe('offline')
+  })
+
+  it('reports offline when device registration fails', async () => {
+    vi.mocked(registerDevice).mockRejectedValue(new Error('down'))
+    const conn = useConnection()
+    setup(() => useScheduleSync())
+    await flushPromises()
+    expect(conn.value).toBe('offline')
   })
 
   it('stays idle without an event source and detaches on unmount', async () => {
