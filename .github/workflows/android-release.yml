@@ -38,13 +38,8 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           BUILD_ID: build-${{ github.run_number }}
 
-      # В репозитории закоммичена только часть android-проекта (без gradle-файлов),
-      # поэтому нативный проект пересоздаётся.
-      - name: Generate Android project
-        run: |
-          rm -rf android
-          npx cap add android
-          npx cap sync android
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Build debug APK
         working-directory: frontend/android
