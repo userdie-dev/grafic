@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">grafic</string>
+    <string name="title_activity_main">grafic</string>
+    <string name="package_name">com.grafic.app</string>
+    <string name="custom_url_scheme">com.grafic.app</string>
+</resources>
