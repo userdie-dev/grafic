@@ -10,6 +10,8 @@
     weekday-format="short"
     class="rounded-[1.75rem] bg-card px-1.5 pb-2 pt-3 shadow-[0_10px_40px_-18px_oklch(0.5_0.1_275/0.3)] sm:rounded-[2rem] sm:px-4 sm:pb-4 sm:pt-4"
     @update:model-value="onPick"
+    @touchstart.passive="onTouchStart"
+    @touchend.passive="onTouchEnd"
   >
     <CalendarHeader class="mb-0 px-1.5">
       <CalendarPrevButton class="size-10 shrink-0 rounded-full border-0 bg-muted/60 text-muted-foreground opacity-100 transition active:scale-90 active:bg-muted" @click="s.shiftMonth(-1)" />
@@ -125,6 +127,21 @@ watch(placeholder, (p) => {
   const diff = (p.year - props.month.getFullYear()) * 12 + p.month - (props.month.getMonth() + 1)
   if (diff) s.shiftMonth(diff)
 })
+
+// horizontal swipe switches the month: left = next, right = previous
+let touch: { x: number; y: number } | null = null
+function onTouchStart(e: TouchEvent) {
+  const t = e.touches[0]
+  touch = e.touches.length === 1 && t ? { x: t.clientX, y: t.clientY } : null
+}
+function onTouchEnd(e: TouchEvent) {
+  const t = e.changedTouches[0]
+  if (!touch || !t) return
+  const dx = t.clientX - touch.x
+  const dy = t.clientY - touch.y
+  touch = null
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) s.shiftMonth(dx < 0 ? 1 : -1)
+}
 
 function onPick(v: DateValue | DateValue[] | undefined) {
   if (v && !Array.isArray(v)) selected.value = v as DateValue

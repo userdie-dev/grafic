@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto flex min-h-dvh max-w-3xl flex-col">
-    <main class="flex-1 overflow-x-hidden p-4 pb-28">
+    <main class="flex-1 overflow-x-hidden p-4 pb-28 pt-[calc(1rem+max(env(safe-area-inset-top),var(--safe-area-inset-top,0px)))]">
       <p v-if="s.error" class="mb-4 rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">{{ s.error }}</p>
       <RouterView />
     </main>
