@@ -1,0 +1,54 @@
+name: Release AAB
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_API_URL: https://grafic-6iu7.onrender.com
+      BUILD_ID: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+      - run: npm run type-check
+      - run: npm test
+      - run: npm run build-only
+      - run: npx cap sync android
+
+      # Ключ подписи берём из Secrets репозитория: KEYSTORE_BASE64, KEYSTORE_PASSWORD
+      - name: Prepare signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64" && test -n "$KEYSTORE_PASSWORD" || { echo "Нет секретов KEYSTORE_BASE64 / KEYSTORE_PASSWORD"; exit 1; }
+          echo "$KEYSTORE_BASE64" | base64 -d > android/upload.p12
+          printf 'storeFile=upload.p12\nstorePassword=%s\nkeyAlias=grafic-upload\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > android/keystore.properties
+
+      - name: Build bundle
+        working-directory: frontend/android
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: frontend/android/app/build/outputs/bundle/release/app-release.aab
