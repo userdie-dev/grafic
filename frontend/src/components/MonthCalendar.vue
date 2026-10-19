@@ -56,9 +56,11 @@
                 <span
                   v-for="e in dayEntries(date).slice(0, 4)"
                   :key="e.shift.id + e.who"
-                  class="size-3 rounded-full"
+                  class="flex size-3 items-center justify-center rounded-full"
                   :style="{ background: e.color }"
-                />
+                >
+                  <Moon v-if="isNightShift(e.shift)" class="size-2 text-white" />
+                </span>
               </span>
 
               <!-- tablet+: dot + time -->
@@ -68,6 +70,7 @@
                   :title="`${e.name}: ${e.shift.start}–${e.shift.end} ${e.shift.note ?? ''}`"
                 >
                   <span class="size-2.5 shrink-0 rounded-full" :style="{ background: e.color }" />
+                  <Moon v-if="isNightShift(e.shift)" class="-mx-0.5 size-3 shrink-0" aria-label="Ночная смена" />
                   {{ e.shift.start }}–{{ e.shift.end }}
                 </span>
               </template>
@@ -87,6 +90,8 @@ import { computed, ref, watch, type Ref } from 'vue'
 import { differenceInCalendarMonths } from 'date-fns'
 import { CalendarRoot, type DateValue } from 'reka-ui'
 import { CalendarDate } from '@internationalized/date'
+import { Moon } from '@lucide/vue'
+import { isNightShift } from '@/lib/night'
 import {
   CalendarCell,
   CalendarCellTrigger,

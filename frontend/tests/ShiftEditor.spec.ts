@@ -184,7 +184,7 @@ describe('adding shifts', () => {
     await mountEditor()
     await openAdd()
     expect(body().textContent).toContain('Новая смена')
-    expect(body().textContent).toContain('Повторять каждую неделю до')
+    expect(body().textContent).toContain('Заполнить график до')
     await submit()
     expect(saved()[0]).toEqual([[{ date: '2030-01-07', start: '09:00', end: '18:00', note: null }], []])
   })
@@ -355,7 +355,7 @@ describe('custom presets', () => {
     await click(btn('Удалить пресет'))
     expect(usePresetsStore().all.every((p) => !p.custom)).toBe(true)
     expect(body().textContent).not.toContain('Удалить пресет')
-    expect(body().textContent).toContain('Повторять каждую неделю до')
+    expect(body().textContent).toContain('Заполнить график до')
   })
 
   it('selecting a preset closes the draft panel', async () => {

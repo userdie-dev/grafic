@@ -14,7 +14,7 @@
       <div v-if="view === 'list'" class="space-y-3">
       <ul class="space-y-1.5">
         <li v-for="s in shifts" :key="s.id" class="flex items-center justify-between gap-2 rounded-2xl bg-secondary px-3 py-2.5 text-sm">
-          <span class="min-w-0 truncate font-medium">{{ s.start }}–{{ s.end }} <span class="font-normal text-muted-foreground">{{ s.note }}</span></span>
+          <span class="min-w-0 truncate font-medium"><Moon v-if="isNightShift(s)" class="mr-1 inline size-4 align-text-bottom" aria-label="Ночная смена" />{{ s.start }}–{{ s.end }} <span class="font-normal text-muted-foreground">{{ s.note }}</span></span>
           <span class="flex shrink-0 gap-1">
             <Button variant="ghost" size="icon-sm" aria-label="Изменить" @click="openForm(s)"><RiEditLine /></Button>
             <Button variant="destructive" size="icon-sm" aria-label="Удалить" @click="emit('remove', s.id)"><RiDeleteBinLine /></Button>
@@ -28,7 +28,7 @@
           <li v-for="f in friends" :key="f.who + f.shift.id" class="flex items-center gap-2 min-h-12 rounded-2xl bg-secondary/60 px-4 py-3 text-base">
             <span class="size-2.5 shrink-0 rounded-full" :style="{ background: f.color }" />
             <span class="shrink-0 font-medium">{{ f.name }}</span>
-            <span class="min-w-0 flex-1 truncate text-right text-muted-foreground">{{ f.shift.start }}–{{ f.shift.end }}<template v-if="f.shift.note"> · {{ f.shift.note }}</template></span>
+            <span class="min-w-0 flex-1 truncate text-right text-muted-foreground"><Moon v-if="isNightShift(f.shift)" class="mr-1 inline size-4 align-text-bottom" aria-label="Ночная смена" />{{ f.shift.start }}–{{ f.shift.end }}<template v-if="f.shift.note"> · {{ f.shift.note }}</template></span>
           </li>
         </ul>
       </div>
@@ -102,7 +102,7 @@
         </div>
         <Input v-model="note" maxlength="200" placeholder="Заметка" class="h-10" />
         <label v-if="!editing" class="block text-xs text-muted-foreground">
-          {{ isWeekly ? 'Повторять каждую неделю до' : 'Заполнить график до' }}
+          Заполнить график до
           <DatePicker v-model="repeatUntil" :min="date" class="mt-1" />
         </label>
         <p v-if="problem" class="text-sm text-destructive">{{ problem }}</p>
@@ -120,6 +120,8 @@
 import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import { addDays, addWeeks, endOfMonth, format, getDay, parseISO } from 'date-fns'
 import { RiAddLine, RiArrowLeftLine, RiDeleteBinLine, RiEditLine } from '@remixicon/vue'
+import { Moon } from '@lucide/vue'
+import { isNightShift } from '@/lib/night'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { DatePicker } from '@/components/ui/date-picker'
