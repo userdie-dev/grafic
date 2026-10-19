@@ -3,6 +3,7 @@ import { addMonths, parseISO } from 'date-fns'
 import { defineStore } from 'pinia'
 import { useLocalStorage } from '@vueuse/core'
 import { registerDevice, setToken } from '@/lib/api'
+import { setUnauthorizedHandler } from '@/app/config/axios'
 import type { Device } from '@/lib/dto'
 import { iso } from '@/lib/dates'
 
@@ -39,6 +40,18 @@ export const useScheduleStore = defineStore('schedule', () => {
     setToken(device.token)
     state.value.device = device
   }
+
+  let reregistering: Promise<void> | undefined
+  // the server forgot our token: drop the stale device and register a new one (shared by concurrent 401s)
+  setUnauthorizedHandler(() => {
+    reregistering ??= (async () => {
+      setToken('')
+      const device = await registerDevice()
+      setToken(device.token)
+      state.value.device = device
+    })().finally(() => (reregistering = undefined))
+    return reregistering
+  })
 
   return {
     state,
