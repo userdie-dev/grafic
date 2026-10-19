@@ -10,7 +10,6 @@ jobs:
       run:
         working-directory: frontend
     env:
-      VITE_API_URL: https://grafic-6iu7.onrender.com
       BUILD_ID: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +29,8 @@ jobs:
       - run: npm run type-check
       - run: npm test
       - run: npm run build-only
+        env:
+          VITE_API_URL: https://grafic-6iu7.onrender.com
       - run: npx cap sync android
 
       # Ключ подписи берём из Secrets репозитория: KEYSTORE_BASE64, KEYSTORE_PASSWORD
