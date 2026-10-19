@@ -1,17 +1,17 @@
 <template>
-  <nav class="fixed inset-x-0 bottom-0 z-20 border-t bg-card pb-[env(safe-area-inset-bottom)]">
+  <nav class="fixed inset-x-0 bottom-0 z-20 bg-background pb-[env(safe-area-inset-bottom)]">
     <div class="mx-auto flex max-w-3xl">
       <RouterLink
         v-for="t in pages"
         :key="t.to"
         :to="t.to"
-        class="group flex flex-1 items-center justify-center py-2 text-xs font-medium"
+        class="flex flex-1 items-center justify-center pb-3 pt-3.5 text-[11px] font-medium"
       >
         <span
-          class="flex flex-col items-center gap-1 rounded-2xl px-4 py-1.5 transition-colors group-active:bg-muted"
+          class="flex flex-col items-center gap-1.5 transition-colors"
           :class="isActive(t.to) ? 'text-primary' : 'text-muted-foreground'"
         >
-          <component :is="isActive(t.to) ? t.activeIcon : t.icon" class="size-6" />
+          <component :is="t.icon" class="size-7" />
           {{ t.label }}
         </span>
       </RouterLink>
@@ -21,13 +21,13 @@
 
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
-import { RiCalendarFill, RiCalendarLine, RiSettings3Fill, RiSettings3Line, RiShareFill, RiShareLine } from '@remixicon/vue'
+import { RiCalendarLine, RiSettings3Line, RiShareLine } from '@remixicon/vue'
 
 const route = useRoute()
 const pages = [
-  { to: '/', label: 'Календарь', icon: RiCalendarLine, activeIcon: RiCalendarFill },
-  { to: '/share', label: 'Поделиться', icon: RiShareLine, activeIcon: RiShareFill },
-  { to: '/settings', label: 'Настройки', icon: RiSettings3Line, activeIcon: RiSettings3Fill },
+  { to: '/', label: 'Календарь', icon: RiCalendarLine },
+  { to: '/share', label: 'Поделиться', icon: RiShareLine },
+  { to: '/settings', label: 'Настройки', icon: RiSettings3Line },
 ] as const
 
 const isActive = (to: string) => route.path === to

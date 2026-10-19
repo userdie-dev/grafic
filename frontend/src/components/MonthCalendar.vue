@@ -8,7 +8,7 @@
     fixed-weeks
     prevent-deselect
     weekday-format="short"
-    class="rounded-[1.75rem] bg-card px-1.5 pb-2 pt-3 shadow-[0_10px_40px_-18px_oklch(0.5_0.1_275/0.3)] sm:rounded-[2rem] sm:px-4 sm:pb-4 sm:pt-4"
+    class="rounded-[1.75rem] bg-card px-1.5 pb-3 pt-3 sm:rounded-[2rem] sm:px-4 sm:pb-4 sm:pt-4"
     @update:model-value="onPick"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
@@ -36,8 +36,8 @@
           <CalendarHeadCell
             v-for="(d, i) in weekDays"
             :key="d"
-            class="min-w-0 basis-0 pb-1.5 text-[11px] font-medium capitalize"
-            :class="i >= 5 ? 'text-primary/60' : 'text-muted-foreground/80'"
+            class="min-w-0 basis-0 pb-1.5 text-xs font-medium"
+            :class="i >= 5 ? 'text-muted-foreground/50' : 'text-foreground/80'"
           >{{ d }}</CalendarHeadCell>
         </CalendarGridRow>
       </CalendarGridHead>
@@ -47,16 +47,16 @@
             <CalendarCellTrigger
               :day="date"
               :month="m.value"
-              class="group/day flex h-auto min-h-[4.75rem] w-full flex-col items-center justify-start gap-1 rounded-[1.1rem] bg-gradient-to-b from-primary/12 to-primary/[0.03] ring-1 ring-inset ring-primary/10 px-0.5 pb-1.5 pt-1 font-normal transition active:scale-95 data-[outside-view]:opacity-30 data-[selected]:from-primary/25 data-[selected]:to-primary/10 data-[selected]:ring-2 data-[selected]:ring-primary/50 sm:min-h-28 sm:items-stretch sm:gap-1 sm:px-1.5 sm:hover:bg-muted/70"
+              class="group/day flex h-auto min-h-[4.75rem] w-full flex-col items-center justify-start gap-1 rounded-xl bg-transparent px-0.5 pb-1.5 pt-1.5 font-normal ring-1 ring-inset ring-transparent transition hover:bg-transparent active:scale-95 data-[outside-view]:opacity-30 data-[selected]:bg-transparent data-[today]:bg-transparent data-[selected]:ring-foreground/80 data-[today]:ring-foreground/40 data-[selected]:text-foreground data-[selected]:hover:bg-transparent data-[selected]:hover:text-foreground data-[selected]:focus:bg-transparent data-[selected]:focus:text-foreground [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-foreground sm:min-h-28 sm:items-stretch sm:gap-1 sm:px-1.5"
             >
-              <span class="flex size-7 items-center justify-center rounded-full text-[13px] font-medium group-data-[today]/day:bg-primary group-data-[today]/day:font-semibold group-data-[today]/day:text-primary-foreground group-data-[selected]/day:font-semibold sm:self-start">{{ date.day }}</span>
+              <span class="flex h-7 items-center justify-center text-[15px] font-medium sm:self-start sm:px-1">{{ date.day }}</span>
 
-              <!-- mobile: colour dots -->
-              <span v-if="dayEntries(date).length" class="flex flex-wrap items-center justify-center gap-1 px-0.5 sm:hidden">
+              <!-- mobile: colour pills -->
+              <span v-if="dayEntries(date).length" class="flex w-full flex-col items-center gap-[3px] sm:hidden">
                 <span
-                  v-for="e in dayEntries(date).slice(0, 4)"
+                  v-for="e in dayEntries(date).slice(0, 3)"
                   :key="e.shift.id + e.who"
-                  class="flex size-3 items-center justify-center rounded-full"
+                  class="flex h-3.5 w-full items-center justify-center rounded-[5px]"
                   :style="{ background: e.color }"
                 >
                   <Moon v-if="isNightShift(e.shift)" class="size-2 text-white" />
