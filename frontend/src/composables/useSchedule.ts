@@ -1,4 +1,4 @@
-import { computed, reactive, watch } from 'vue'
+import { computed, onScopeDispose, reactive, watch } from 'vue'
 import { useEventSource } from '@vueuse/core'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { api, eventsUrl } from '@/lib/api'
@@ -143,6 +143,25 @@ export function useScheduleSync() {
 
   store.ensureDevice().catch(() => setConnection('offline'))
 
+  // The stream alone is a poor signal (webviews and proxies drop it while plain requests work),
+  // so after a stream error we ask the server directly and only then declare it unreachable.
+  let streamOpen = false
+  const probe = async () => {
+    try {
+      await api.subscriptions()
+      setConnection('online')
+    } catch {
+      if (!streamOpen) setConnection('offline')
+    }
+  }
+  // without a live stream, poll so the calendar still picks up changes
+  const poll = setInterval(() => {
+    if (streamOpen || !store.state.device) return
+    qc.invalidateQueries({ queryKey: ['shifts'] })
+    probe()
+  }, 30_000)
+  onScopeDispose(() => clearInterval(poll))
+
   const url = computed(() => (store.state.device ? eventsUrl(store.state.device.token) : undefined))
   const { eventSource } = useEventSource(url, ['schedule.changed'], { autoReconnect: true })
 
@@ -152,8 +171,14 @@ export function useScheduleSync() {
     (es, _, onCleanup) => {
       if (!es) return
       setConnection('connecting')
-      const onOpen = () => setConnection('online')
-      const onError = () => setConnection('offline')
+      const onOpen = () => {
+        streamOpen = true
+        setConnection('online')
+      }
+      const onError = () => {
+        streamOpen = false
+        probe()
+      }
       es.addEventListener('open', onOpen)
       es.addEventListener('error', onError)
       const handler = (e: Event) => {

@@ -276,8 +276,22 @@ describe('useScheduleSync', () => {
     expect(conn.value).toBe('connecting')
     es.current!.dispatchEvent(new Event('open'))
     expect(conn.value).toBe('online')
+    vi.mocked(api.subscriptions).mockRejectedValue(new Error('down'))
     es.current!.dispatchEvent(new Event('error'))
+    await flushPromises()
     expect(conn.value).toBe('offline')
+  })
+
+  it('stays online when the stream drops but the server still answers', async () => {
+    vi.mocked(registerDevice).mockResolvedValue(device)
+    const conn = useConnection()
+    setup(() => useScheduleSync())
+    await flushPromises()
+    es.current!.dispatchEvent(new Event('open'))
+    vi.mocked(api.subscriptions).mockResolvedValue([])
+    es.current!.dispatchEvent(new Event('error'))
+    await flushPromises()
+    expect(conn.value).toBe('online')
   })
 
   it('reports offline when device registration fails', async () => {
