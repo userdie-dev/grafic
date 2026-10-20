@@ -1,0 +1,38 @@
+name: Signing key ZIP (PEPK)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pepk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Download PEPK
+        run: curl -fsSL -o pepk.jar https://www.gstatic.com/play-apps-publisher-rapid/signing-tool/prod/pepk.jar
+
+      - name: Build encrypted key zip
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > upload.p12
+          java -jar pepk.jar \
+            --keystore=upload.p12 \
+            --alias=grafic-upload \
+            --keystore-pass="$KEYSTORE_PASSWORD" \
+            --key-pass="$KEYSTORE_PASSWORD" \
+            --output=pepk_out.zip \
+            --encryptionkey=0000c40aed55a80e8b859d5a6d37c1e8369b4bf78fb3b287107808689cc570000ec564b3ab4f82b1ee4e0cb33ef4b83038063e6075eba3068a9be7f4fd2c487037a9ac7a \
+            --include-cert || { java -jar pepk.jar --help || true; exit 1; }
+          ls -l pepk_out.zip
+          rm -f upload.p12
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pepk_out
+          path: pepk_out.zip
