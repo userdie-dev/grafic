@@ -1,3 +1,4 @@
+import { toUtcInput } from '@/lib/tz'
 import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -111,7 +112,7 @@ describe('api', () => {
     expect([last().method, last().url, JSON.parse(last().data)]).toEqual([
       'put',
       '/me/shifts',
-      { shifts: [{ date: '2030-01-01', start: '09:00', end: '10:00' }] },
+      { shifts: [toUtcInput({ date: '2030-01-01', start: '09:00', end: '10:00' })] },
     ])
 
     await api.api.deleteShift('s1')

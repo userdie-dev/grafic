@@ -3,7 +3,9 @@ import { useEventSource } from '@vueuse/core'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { api, eventsUrl } from '@/lib/api'
 import type { Shift, ShiftInput } from '@/lib/dto'
-import { gridRange } from '@/lib/dates'
+import { toLocalShift } from '@/lib/tz'
+import { addDays, parseISO } from 'date-fns'
+import { gridRange, iso } from '@/lib/dates'
 import { freeDays } from '@/lib/commonOff'
 import { MOCK_FRIENDS, USE_MOCK_FRIENDS, mockShifts } from '@/lib/mock'
 import { useScheduleStore } from '@/stores/schedule'
@@ -21,12 +23,17 @@ export function useSchedule() {
 
   const enabled = computed(() => !!store.state.device)
   const range = computed(() => gridRange(store.month))
+  // shifts are stored in UTC, so a day at the edge of the grid may sit on a neighbouring UTC date
+  const padded = computed(() => ({
+    from: iso(addDays(parseISO(range.value.from), -1)),
+    to: iso(addDays(parseISO(range.value.to), 1)),
+  }))
 
   const subsQuery = useQuery({ queryKey: ['subs'], queryFn: api.subscriptions, enabled })
 
   const mineQuery = useQuery({
     queryKey: computed(() => ['shifts', ME, range.value.from, range.value.to]),
-    queryFn: () => api.myShifts(range.value.from, range.value.to),
+    queryFn: () => api.myShifts(padded.value.from, padded.value.to),
     enabled,
     placeholderData: keepPreviousData,
   })
@@ -37,7 +44,7 @@ export function useSchedule() {
     queries: computed(() =>
       subs.value.map((s) => ({
         queryKey: ['shifts', s.ownerId, range.value.from, range.value.to],
-        queryFn: () => api.friendShifts(s.ownerId, range.value.from, range.value.to),
+        queryFn: () => api.friendShifts(s.ownerId, padded.value.from, padded.value.to),
         placeholderData: keepPreviousData,
       })),
     ),
@@ -58,7 +65,7 @@ export function useSchedule() {
     ...mockPeople.map((m, i) => ({ ...m, color: COLORS[(subs.value.length + i + 1) % COLORS.length]! })),
   ])
 
-  const myShifts = computed(() => mineQuery.data.value ?? [])
+  const myShifts = computed(() => (mineQuery.data.value ?? []).map(toLocalShift))
 
   /** date -> entries of all visible people */
   const byDate = computed(() => {
@@ -70,7 +77,7 @@ export function useSchedule() {
           ? myShifts.value
           : p.id.startsWith('mock-')
             ? mockShifts(p.id, range.value.from, range.value.to)
-            : (friendQueries.value[i - 1]?.data ?? [])
+            : (friendQueries.value[i - 1]?.data ?? []).map(toLocalShift)
       for (const shift of list) (map[shift.date] ??= []).push({ who: p.id, name: p.name, color: p.color, shift })
     })
     for (const list of Object.values(map)) list.sort((a, b) => a.shift.start.localeCompare(b.shift.start))

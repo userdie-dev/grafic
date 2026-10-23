@@ -107,7 +107,7 @@ describe('useSchedule', () => {
     const { result } = setup(useSchedule)
     await flushPromises()
 
-    expect(api.myShifts).toHaveBeenCalledWith('2029-12-31', '2030-02-03')
+    expect(api.myShifts).toHaveBeenCalledWith('2029-12-30', '2030-02-04')
     expect(result.shareCode).toBe('ABC234')
     expect(result.month.getFullYear()).toBe(2030)
     expect(result.myShifts).toHaveLength(1)

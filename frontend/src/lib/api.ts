@@ -1,4 +1,5 @@
 import { API_URL, http, setToken } from "@/app/config/axios";
+import { toUtcInput } from "./tz";
 import type { Device, Shift, ShiftInput, Subscription } from "./dto";
 
 export { setToken };
@@ -20,7 +21,7 @@ export const api = {
     get<Shift[]>(`/me/shifts${range(from, to)}`),
 
   saveShifts: (shifts: ShiftInput[]) =>
-    send<Shift[]>("put", "/me/shifts", { shifts }),
+    send<Shift[]>("put", "/me/shifts", { shifts: shifts.map(toUtcInput) }),
 
   deleteShift: (id: string) =>
     send<{ deleted: boolean }>("delete", `/me/shifts/${id}`),
