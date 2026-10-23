@@ -51,29 +51,7 @@
               class="group/day flex h-auto min-h-[4.75rem] w-full flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 pb-1.5 pt-1.5 font-normal transition hover:bg-transparent active:scale-95 data-[outside-view]:opacity-30 data-[selected]:bg-muted data-[selected]:hover:bg-muted data-[selected]:focus:bg-muted data-[selected]:text-foreground [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-foreground sm:min-h-28 sm:items-stretch sm:gap-1 sm:px-1.5"
             >
               <span class="flex size-7 items-center justify-center rounded-full text-[15px] font-medium group-data-[today]/day:bg-primary group-data-[today]/day:font-semibold group-data-[today]/day:text-primary-foreground sm:self-start">{{ date.day }}</span>
-
-              <!-- mobile: colour dots -->
-              <span v-if="dayEntries(date).length" class="flex w-full flex-wrap items-center justify-center gap-1 sm:hidden">
-                <template v-for="e in dayEntries(date).slice(0, 4)" :key="e.shift.id + e.who">
-                  <Moon v-if="isNightShift(e.shift)" class="size-3.5" stroke-width="2.5" :style="{ color: e.color }" />
-                  <span v-else class="size-2.5 rounded-full" :style="{ background: e.color }" />
-                </template>
-              </span>
-
-              <!-- tablet+: dot + time -->
-              <template v-for="e in dayEntries(date).slice(0, MAX)" :key="e.shift.id + e.who">
-                <span
-                  class="hidden items-center gap-1.5 truncate text-left text-[10px] leading-[18px] font-medium text-foreground/80 sm:flex"
-                  :title="`${e.name}: ${e.shift.start}–${e.shift.end} ${e.shift.note ?? ''}`"
-                >
-                  <span class="size-2.5 shrink-0 rounded-full" :style="{ background: e.color }" />
-                  <Moon v-if="isNightShift(e.shift)" class="-mx-0.5 size-3.5 shrink-0" stroke-width="2.5" :style="{ color: e.color }" aria-label="Ночная смена" />
-                  {{ e.shift.start }}–{{ e.shift.end }}
-                </span>
-              </template>
-              <span v-if="dayEntries(date).length > MAX" class="hidden px-1 text-left text-[10px] text-muted-foreground sm:block">
-                +{{ dayEntries(date).length - MAX }}
-              </span>
+              <DayEntries :entries="dayEntries(date)" />
             </CalendarCellTrigger>
           </CalendarCell>
         </CalendarGridRow>
@@ -87,8 +65,8 @@ import { computed, ref, watch, type Ref } from 'vue'
 import { differenceInCalendarMonths } from 'date-fns'
 import { CalendarRoot, type DateValue } from 'reka-ui'
 import { CalendarDate } from '@internationalized/date'
-import { Moon } from '@lucide/vue'
-import { isNightShift } from '@/lib/night'
+import DayEntries from '@/components/calendar/DayEntries.vue'
+import { useMonthSwipe } from '@/composables/useMonthSwipe'
 import {
   CalendarCell,
   CalendarCellTrigger,
@@ -103,12 +81,11 @@ import {
   CalendarPrevButton,
 } from '@/components/ui/calendar'
 import { useScheduleStore } from '@/stores/schedule'
-import type { Shift } from '@/lib/dto'
+import type { Entry } from '@/composables/useSchedule'
 
-const MAX = 3
 const props = defineProps<{
   month: Date
-  entries: Record<string, { who: string; name: string; color: string; shift: Shift }[]>
+  entries: Record<string, Entry[]>
   /** days when everyone visible is off */
   freeDays?: string[]
 }>()
@@ -133,23 +110,11 @@ watch(placeholder, (p) => {
   if (diff) s.shiftMonth(diff)
 })
 
-// horizontal swipe switches the month: left = next, right = previous
-let touch: { x: number; y: number } | null = null
-function onTouchStart(e: TouchEvent) {
-  const t = e.touches[0]
-  touch = e.touches.length === 1 && t ? { x: t.clientX, y: t.clientY } : null
-}
-function onTouchEnd(e: TouchEvent) {
-  const t = e.changedTouches[0]
-  if (!touch || !t) return
-  const dx = t.clientX - touch.x
-  const dy = t.clientY - touch.y
-  touch = null
-  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) s.shiftMonth(dx < 0 ? 1 : -1)
-}
+const { onTouchStart, onTouchEnd } = useMonthSwipe((dir) => s.shiftMonth(dir))
 
 function onPick(v: DateValue | DateValue[] | undefined) {
-  if (v && !Array.isArray(v)) selected.value = v as DateValue
-  if (v && !Array.isArray(v)) emit('select', v.toString())
+  if (!v || Array.isArray(v)) return
+  selected.value = v as DateValue
+  emit('select', v.toString())
 }
 </script>

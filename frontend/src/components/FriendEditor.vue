@@ -1,5 +1,5 @@
 <template>
-  <Drawer :open="open" @update:open="close">
+  <Drawer :open="open" @update:open="onOpenChange">
     <DrawerContent class="pb-[max(1rem,env(safe-area-inset-bottom))]">
       <DrawerTitle class="px-1 pb-3 pt-2 text-lg">Друг</DrawerTitle>
       <DrawerDescription class="sr-only">Имя, цвет и видимость друга в календаре</DrawerDescription>
@@ -25,19 +25,19 @@
         <button
           type="button"
           role="switch"
-          :aria-checked="!hidden"
+          :aria-checked="!editor.hidden.value"
           class="flex w-full items-center justify-between rounded-2xl bg-secondary px-4 py-3 text-left font-medium"
-          @click="emit('toggle')"
+          @click="editor.toggle"
         >
           Показывать в календаре
-          <span class="flex h-6 w-10 items-center rounded-full p-0.5 transition-colors" :class="hidden ? 'bg-muted-foreground/30' : 'bg-primary'">
-            <span class="size-5 rounded-full bg-white shadow transition-transform" :class="hidden ? '' : 'translate-x-4'" />
+          <span class="flex h-6 w-10 items-center rounded-full p-0.5 transition-colors" :class="editor.hidden.value ? 'bg-muted-foreground/30' : 'bg-primary'">
+            <span class="size-5 rounded-full bg-white shadow transition-transform" :class="editor.hidden.value ? '' : 'translate-x-4'" />
           </span>
         </button>
 
         <div class="flex gap-2">
           <Button type="submit" class="h-10 flex-1">Сохранить</Button>
-          <Button v-if="removable" type="button" variant="outline" class="h-10 flex-1 text-destructive" @click="askRemove">
+          <Button v-if="editor.removable.value" type="button" variant="outline" class="h-10 flex-1 text-destructive" @click="askRemove">
             <RiDeleteBinLine /> {{ removing ? 'Точно удалить?' : 'Удалить' }}
           </Button>
         </div>
@@ -47,37 +47,25 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
+import { ref } from 'vue'
 import { RiDeleteBinLine } from '@remixicon/vue'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
+import { useDrawerClose } from '@/composables/useDrawerClose'
+import { useFriendEditor } from '@/composables/useFriendEditor'
 import { COLORS } from '@/composables/useSchedule'
 
-const CLOSE_ANIMATION_MS = 200
+const editor = useFriendEditor()
+const person = editor.friend.value!
 
-const props = defineProps<{ person: { id: string; name: string; color: string }; hidden: boolean; removable: boolean }>()
-const emit = defineEmits<{
-  close: []
-  save: [name: string, color: string]
-  toggle: []
-  remove: []
-}>()
+const { open, close, onOpenChange } = useDrawerClose(editor.close)
 
-// the parent unmounts us on `close`, so wait for the exit animation to finish first
-const open = ref(true)
-let closeTimer: ReturnType<typeof setTimeout> | undefined
-function close() {
-  open.value = false
-  closeTimer = setTimeout(() => emit('close'), CLOSE_ANIMATION_MS)
-}
-onBeforeUnmount(() => clearTimeout(closeTimer))
-
-const name = ref(props.person.name)
-const color = ref(props.person.color)
+const name = ref(person.name)
+const color = ref(person.color)
 
 function save() {
-  emit('save', name.value.trim() || props.person.name, color.value)
+  editor.save(name.value.trim() || person.name, color.value)
   close()
 }
 
@@ -88,7 +76,7 @@ function askRemove() {
     removing.value = true
     return
   }
-  emit('remove')
+  editor.remove()
   close()
 }
 </script>

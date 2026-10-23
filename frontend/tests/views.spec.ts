@@ -2,7 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CalendarDate } from '@internationalized/date'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 
 const h = vi.hoisted(() => ({ s: null as any, copy: vi.fn() }))
 
@@ -21,6 +21,8 @@ import ShareView from '@/components/ShareView.vue'
 import MonthCalendar from '@/components/MonthCalendar.vue'
 import CalendarPage from '@/pages/CalendarPage.vue'
 import FriendEditor from '@/components/FriendEditor.vue'
+import { useDayEditor } from '@/composables/useDayEditor'
+import { FRIEND_EDITOR_KEY, useFriendEditor } from '@/composables/useFriendEditor'
 import { useScheduleStore } from '@/stores/schedule'
 
 const entry = (who: string, date: string, start = '09:00') => ({
@@ -253,14 +255,12 @@ describe('CalendarPage', () => {
   const stubs = {
     MonthCalendar: { props: ['month', 'entries', 'freeDays'], emits: ['select'], template: '<button id="cal" @click="$emit(\'select\', \'2030-01-10\')" />' },
     FriendEditor: {
-      props: ['person', 'hidden', 'removable'],
-      emits: ['close', 'save', 'toggle', 'remove'],
-      template: '<div id="fe">{{ person.id }}|{{ hidden }}|{{ removable }}<i id="fsave" @click="$emit(\'save\', \'Анна\', \'#abc\')" /><i id="ftoggle" @click="$emit(\'toggle\')" /><i id="fremove" @click="$emit(\'remove\')" /><i id="fclose" @click="$emit(\'close\')" /></div>',
+      setup: () => ({ e: useFriendEditor() }),
+      template: '<div id="fe">{{ e.friend.value.id }}|{{ e.hidden.value }}|{{ e.removable.value }}<i id="fsave" @click="e.save(\'Анна\', \'#abc\')" /><i id="ftoggle" @click="e.toggle()" /><i id="fremove" @click="e.remove()" /><i id="fclose" @click="e.close()" /></div>',
     },
     ShiftEditor: {
-      props: ['date', 'shifts', 'friends'],
-      emits: ['close', 'save', 'remove'],
-      template: '<div id="ed">{{ date }}|{{ shifts.length }}|{{ friends.length }}<i id="close" @click="$emit(\'close\')" /><i id="save" @click="$emit(\'save\', [1], [\'x\'])" /><i id="rm" @click="$emit(\'remove\', \'r\')" /></div>',
+      setup: () => ({ e: useDayEditor() }),
+      template: '<div id="ed">{{ e.date.value }}|{{ e.shifts.value.length }}|{{ e.friends.value.length }}<i id="close" @click="e.close()" /><i id="save" @click="e.save([1], [\'x\'])" /><i id="rm" @click="e.remove(\'r\')" /></div>',
     },
   }
 
@@ -327,9 +327,9 @@ describe('CalendarPage', () => {
     expect(w.find('#ed').exists()).toBe(false)
   })
 
-  it('has no friends while nothing is selected', () => {
+  it('shows no editor while nothing is selected', () => {
     const w = mount(CalendarPage, { global: { stubs } })
-    expect((w.vm as any).selectedFriends).toEqual([])
+    expect(w.find('#ed').exists()).toBe(false)
   })
 
   it('has no friends for days without entries', async () => {
@@ -345,10 +345,23 @@ describe('FriendEditor', () => {
   const btn = (text: string) => [...body().querySelectorAll('button')].find((b) => b.textContent!.includes(text))!
   const input = () => body().querySelector<HTMLInputElement>('input[placeholder="Имя"]')!
   let w: ReturnType<typeof mount>
-  const open = async (hidden = false) => {
-    w = mount(FriendEditor, { props: { person, hidden, removable: true }, attachTo: body() })
+  const fakeEditor = (hidden: boolean, removable: boolean) => ({
+    friend: ref(person),
+    hidden: ref(hidden),
+    removable: ref(removable),
+    open: vi.fn(),
+    close: vi.fn(),
+    save: vi.fn(),
+    toggle: vi.fn(),
+    remove: vi.fn(),
+  })
+  let editor: ReturnType<typeof fakeEditor>
+  const mountEditor = async (hidden: boolean, removable: boolean) => {
+    editor = fakeEditor(hidden, removable)
+    w = mount(FriendEditor, { global: { provide: { [FRIEND_EDITOR_KEY as symbol]: editor } }, attachTo: body() })
     await flushPromises()
   }
+  const open = (hidden = false) => mountEditor(hidden, true)
   afterEach(() => {
     w?.unmount()
     body().innerHTML = ''
@@ -365,10 +378,10 @@ describe('FriendEditor', () => {
     body().querySelectorAll<HTMLElement>('[role="radio"]')[0]!.click()
     body().querySelector('form')!.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(w.emitted('save')).toEqual([['Анна', '#111']])
-    expect(w.emitted('close')).toBeUndefined()
+    expect(editor.save).toHaveBeenCalledWith('Анна', '#111')
+    expect(editor.close).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(250)
-    expect(w.emitted('close')).toHaveLength(1)
+    expect(editor.close).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the old name when it is blank', async () => {
@@ -377,7 +390,7 @@ describe('FriendEditor', () => {
     input().dispatchEvent(new Event('input', { bubbles: true }))
     body().querySelector('form')!.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(w.emitted('save')).toEqual([['Аня', '#222']])
+    expect(editor.save).toHaveBeenCalledWith('Аня', '#222')
   })
 
   it('shows and flips visibility', async () => {
@@ -385,12 +398,11 @@ describe('FriendEditor', () => {
     const sw = body().querySelector<HTMLElement>('[role="switch"]')!
     expect(sw.getAttribute('aria-checked')).toBe('false')
     sw.click()
-    expect(w.emitted('toggle')).toHaveLength(1)
+    expect(editor.toggle).toHaveBeenCalledTimes(1)
   })
 
   it('hides the delete button when removal is not allowed', async () => {
-    w = mount(FriendEditor, { props: { person, hidden: false, removable: false }, attachTo: body() })
-    await flushPromises()
+    await mountEditor(false, false)
     expect(btn('Удалить')).toBeUndefined()
   })
 
@@ -398,10 +410,10 @@ describe('FriendEditor', () => {
     await open()
     btn('Удалить').click()
     await flushPromises()
-    expect(w.emitted('remove')).toBeUndefined()
+    expect(editor.remove).not.toHaveBeenCalled()
     btn('Точно удалить?').click()
     await flushPromises()
-    expect(w.emitted('remove')).toHaveLength(1)
+    expect(editor.remove).toHaveBeenCalledTimes(1)
   })
 
   it('closes when the drawer is dismissed', async () => {
@@ -409,7 +421,7 @@ describe('FriendEditor', () => {
     await open()
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await vi.advanceTimersByTimeAsync(250)
-    expect(w.emitted('close')).toHaveLength(1)
+    expect(editor.close).toHaveBeenCalledTimes(1)
   })
 
   it('does not emit close after unmounting', async () => {
@@ -419,6 +431,6 @@ describe('FriendEditor', () => {
     await flushPromises()
     w.unmount()
     await vi.advanceTimersByTimeAsync(250)
-    expect(w.emitted('close')).toBeUndefined()
+    expect(editor.close).not.toHaveBeenCalled()
   })
 })

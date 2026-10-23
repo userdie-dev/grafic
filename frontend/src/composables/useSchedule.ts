@@ -12,7 +12,7 @@ import { setConnection } from '@/composables/useConnection'
 export const COLORS = ['#2563eb', '#16a34a', '#d97706', '#db2777', '#7c3aed', '#0891b2', '#dc2626', '#65a30d']
 export const ME = 'me'
 
-type Entry = { who: string; name: string; color: string; shift: Shift }
+export type Entry = { who: string; name: string; color: string; shift: Shift }
 
 /** Queries, mutations and derived calendar data on top of the client store. */
 export function useSchedule() {

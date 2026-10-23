@@ -1,7 +1,9 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import ShiftEditor from '@/components/ShiftEditor.vue'
+import { DAY_EDITOR_KEY } from '@/composables/useDayEditor'
 import { usePresetsStore } from '@/stores/presets'
 import type { Shift } from '@/lib/dto'
 
@@ -25,8 +27,20 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+let editor: ReturnType<typeof fakeEditor>
+const fakeEditor = (props: Record<string, unknown>) => ({
+  selected: ref('2030-01-07'),
+  date: ref('2030-01-07'),
+  shifts: ref((props.shifts ?? []) as Shift[]),
+  friends: ref((props.friends ?? []) as unknown[]),
+  open: vi.fn(),
+  close: vi.fn(),
+  save: vi.fn(),
+  remove: vi.fn(),
+})
 const mountEditor = async (props: Record<string, unknown> = {}) => {
-  w = mount(ShiftEditor, { props: { date: '2030-01-07', shifts: [], ...props }, attachTo: body() })
+  editor = fakeEditor(props)
+  w = mount(ShiftEditor, { global: { provide: { [DAY_EDITOR_KEY as symbol]: editor } }, attachTo: body() })
   await flushPromises()
   return w
 }
@@ -50,7 +64,7 @@ const submit = async () => {
 }
 /** Opens the add-shift form. */
 const openAdd = async () => click(aria('Добавить смену'))
-const saved = () => w.emitted('save')!
+const saved = () => editor.save.mock.calls
 
 describe('list view', () => {
   it('shows an empty state and the formatted date', async () => {
@@ -72,7 +86,7 @@ describe('list view', () => {
   it('emits remove for a shift', async () => {
     await mountEditor({ shifts: [shift()] })
     await click(aria('Удалить'))
-    expect(w.emitted('remove')).toEqual([['s1']])
+    expect(editor.remove.mock.calls).toEqual([['s1']])
   })
 })
 
@@ -82,9 +96,9 @@ describe('closing', () => {
     await mountEditor()
     w.findComponent({ name: 'Drawer' }).vm.$emit('update:open', false)
     await flushPromises()
-    expect(w.emitted('close')).toBeUndefined()
+    expect(editor.close).not.toHaveBeenCalled()
     vi.advanceTimersByTime(250)
-    expect(w.emitted('close')).toHaveLength(1)
+    expect(editor.close).toHaveBeenCalledTimes(1)
   })
 
   it('ignores an open request', async () => {
@@ -92,17 +106,16 @@ describe('closing', () => {
     await mountEditor()
     w.findComponent({ name: 'Drawer' }).vm.$emit('update:open', true)
     vi.advanceTimersByTime(250)
-    expect(w.emitted('close')).toBeUndefined()
+    expect(editor.close).not.toHaveBeenCalled()
   })
 
   it('cancels a pending close when unmounted', async () => {
     vi.useFakeTimers()
     await mountEditor()
-    const emitted = w.emitted()
     w.findComponent({ name: 'Drawer' }).vm.$emit('update:open', false)
     w.unmount()
     vi.advanceTimersByTime(250)
-    expect(emitted.close).toBeUndefined()
+    expect(editor.close).not.toHaveBeenCalled()
   })
 })
 
@@ -170,7 +183,7 @@ describe('editing an existing shift', () => {
     await flushPromises()
     await submit()
     expect(body().textContent).toContain('Укажите время')
-    expect(w.emitted('save')).toBeUndefined()
+    expect(editor.save).not.toHaveBeenCalled()
   })
 })
 
