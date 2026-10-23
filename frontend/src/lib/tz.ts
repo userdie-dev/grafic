@@ -28,13 +28,14 @@ export function toLocalShift<T extends Pick<Shift, 'date' | 'start' | 'end'>>(sh
 /** Device-local shift being saved -> UTC shift for the server. */
 export function toUtcInput(shift: ShiftInput): ShiftInput {
   const [y, m, d] = shift.date.split('-').map(Number)
-  const at = (_: number, time: string) => new Date(y!, m! - 1, d!, +time.slice(0, 2), +time.slice(3)).getTime()
-  const [s, e] = span(shift.date, shift.start, shift.end, at)
-  const start = new Date(s)
+  // an overnight shift ends on the next calendar day, not 24 hours later: the two differ on DST change nights
+  const at = (day: number) => (time: string) => new Date(y!, m! - 1, day, +time.slice(0, 2), +time.slice(3))
+  const start = at(d!)(shift.start)
+  const end = at(shift.end <= shift.start ? d! + 1 : d!)(shift.end)
   return {
     ...shift,
     date: `${start.getUTCFullYear()}-${p2(start.getUTCMonth() + 1)}-${p2(start.getUTCDate())}`,
     start: hmUtc(start),
-    end: hmUtc(new Date(e)),
+    end: hmUtc(end),
   }
 }
