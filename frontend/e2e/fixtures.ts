@@ -42,6 +42,7 @@ export const test = base.extend<Fixtures>({
   api: async ({}, use) => use(new FakeApi()),
   network: async ({}, use) => use({ offline: false }),
   app: async ({ page, api, network }, use) => {
+    await page.addInitScript(() => localStorage.setItem('onboarding_seen', '1'))
     await page.clock.setFixedTime(new Date('2026-03-10T09:00:00Z'))
     await serve(page, api, network)
     await page.goto('/')

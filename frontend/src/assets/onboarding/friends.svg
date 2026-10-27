@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" fill="none">
+  <rect width="360" height="240" rx="24" fill="#fce7f3"/>
+  <rect x="50" y="28" width="260" height="184" rx="22" fill="#fff"/>
+  <text x="180" y="60" text-anchor="middle" font-family="Nunito,sans-serif" font-size="15" font-weight="700" fill="#1e293b">Добавить друга по коду</text>
+  <rect x="70" y="76" width="220" height="32" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="84" y="97" font-family="Nunito,sans-serif" font-size="14" font-weight="600" letter-spacing="3" fill="#0f172a">K7M2Q</text>
+  <rect x="70" y="114" width="220" height="32" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="84" y="135" font-family="Nunito,sans-serif" font-size="14" font-weight="600" fill="#0f172a">Аня</text>
+  <rect x="70" y="154" width="220" height="32" rx="12" fill="#4f46e5"/>
+  <text x="180" y="175" text-anchor="middle" font-family="Nunito,sans-serif" font-size="14" font-weight="700" fill="#fff">Добавить</text>
+  <g font-family="Nunito,sans-serif" font-size="12" font-weight="600">
+    <rect x="70" y="194" width="70" height="14" rx="7" fill="#4f46e5"/><text x="105" y="205" text-anchor="middle" fill="#fff">Я</text>
+    <rect x="148" y="194" width="70" height="14" rx="7" fill="#f472b6"/><text x="183" y="205" text-anchor="middle" fill="#fff">Аня</text>
+    <rect x="226" y="194" width="64" height="14" rx="7" fill="#34d399" fill-opacity=".4"/><text x="258" y="205" text-anchor="middle" fill="#065f46">общий вых.</text>
+  </g>
+</svg>

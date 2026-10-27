@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" fill="none">
+  <rect width="360" height="240" rx="24" fill="#e0e7ff"/>
+  <rect x="60" y="24" width="240" height="192" rx="18" fill="#fff"/>
+  <text x="80" y="52" font-family="Nunito,sans-serif" font-size="15" font-weight="700" fill="#1e293b">Март</text>
+  <g font-family="Nunito,sans-serif" font-size="12" font-weight="600" text-anchor="middle" fill="#64748b">
+    <text x="90" y="76">Пн</text><text x="120" y="76">Вт</text><text x="150" y="76">Ср</text><text x="180" y="76">Чт</text><text x="210" y="76">Пт</text><text x="240" y="76">Сб</text><text x="270" y="76">Вс</text>
+  </g>
+  <g font-family="Nunito,sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="#334155">
+    <circle cx="90" cy="102" r="14" fill="#fde68a"/><text x="90" y="107">2</text>
+    <text x="120" y="107">3</text>
+    <circle cx="150" cy="102" r="14" fill="#fde68a"/><text x="150" y="107">4</text>
+    <text x="180" y="107">5</text>
+    <circle cx="210" cy="102" r="14" fill="#c7d2fe"/><text x="210" y="107">6</text>
+    <text x="240" y="107">7</text><text x="270" y="107">8</text>
+    <text x="90" y="141">9</text>
+    <circle cx="120" cy="136" r="14" fill="#4f46e5"/><text x="120" y="141" fill="#fff">10</text>
+    <text x="150" y="141">11</text>
+    <circle cx="180" cy="136" r="14" fill="#fde68a"/><text x="180" y="141">12</text>
+    <text x="210" y="141">13</text>
+    <circle cx="240" cy="136" r="14" fill="#c7d2fe"/><text x="240" y="141">14</text>
+    <text x="270" y="141">15</text>
+    <circle cx="90" cy="170" r="14" fill="#fde68a"/><text x="90" y="175">16</text>
+    <text x="120" y="175">17</text>
+    <circle cx="150" cy="170" r="14" fill="#fde68a"/><text x="150" y="175">18</text>
+    <text x="180" y="175">19</text><text x="210" y="175">20</text>
+  </g>
+  <g transform="translate(118 150)">
+    <circle cx="14" cy="14" r="18" fill="#4f46e5" fill-opacity=".18"/>
+    <path d="M9 6v18l5-4 4 8 4-2-4-8h7z" fill="#1e293b" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+  </g>
+</svg>

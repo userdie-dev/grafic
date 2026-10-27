@@ -3,6 +3,9 @@
     <SettingsRow interactive :icon="Wifi" tint="bg-sky-200 text-sky-800" title="Интернет и данные" :hint="label" @click="infoOpen = true">
       <ChevronRight class="size-5 text-muted-foreground" />
     </SettingsRow>
+    <SettingsRow interactive :icon="CircleHelp" tint="bg-violet-200 text-violet-800" title="Как пользоваться" hint="Показать инструкцию заново" @click="show">
+      <ChevronRight class="size-5 text-muted-foreground" />
+    </SettingsRow>
     <SettingsRow :icon="Info" tint="bg-primary/15 text-primary" title="Версия приложения">
       <span class="text-sm text-muted-foreground">{{ version }}</span>
     </SettingsRow>
@@ -15,15 +18,17 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronRight, Info, LoaderCircle, RefreshCw, Wifi } from '@lucide/vue'
+import { ChevronRight, CircleHelp, Info, LoaderCircle, RefreshCw, Wifi } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { checkForUpdates } from '@/app/config/updater'
 import { useConnection } from '@/composables/useConnection'
+import { useOnboarding } from '@/composables/useOnboarding'
 import ConnectionInfoDrawer from './ConnectionInfoDrawer.vue'
 import SettingsRow from './SettingsRow.vue'
 import SettingsSection from './SettingsSection.vue'
 
 const version = __APP_VERSION__
+const { show } = useOnboarding()
 const infoOpen = ref(false)
 const checking = ref(false)
 async function check() {

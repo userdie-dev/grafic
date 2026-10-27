@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" fill="none">
+  <rect width="360" height="240" rx="24" fill="#d1fae5"/>
+  <rect x="50" y="30" width="260" height="180" rx="22" fill="#fff"/>
+  <text x="180" y="62" text-anchor="middle" font-family="Nunito,sans-serif" font-size="15" font-weight="700" fill="#1e293b">Поделиться графиком</text>
+  <rect x="70" y="80" width="220" height="62" rx="18" fill="#f1f5f9"/>
+  <text x="140" y="123" text-anchor="middle" font-family="Nunito,sans-serif" font-size="30" font-weight="700" letter-spacing="8" fill="#0f172a">K7M2Q</text>
+  <rect x="236" y="90" width="44" height="42" rx="14" fill="#fff" stroke="#cbd5e1"/>
+  <rect x="249" y="102" width="14" height="16" rx="3" stroke="#475569" stroke-width="2"/>
+  <rect x="253" y="106" width="14" height="16" rx="3" fill="#fff" stroke="#475569" stroke-width="2"/>
+  <text x="180" y="176" text-anchor="middle" font-family="Nunito,sans-serif" font-size="13" font-weight="600" fill="#64748b">Отправьте код другу</text>
+  <path d="M180 184v14m0 0l-6-6m6 6l6-6" stroke="#059669" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

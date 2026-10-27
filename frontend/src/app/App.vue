@@ -38,6 +38,7 @@
     </Transition>
 
     <AppNav />
+    <OnboardingGuide />
   </div>
 </template>
 
@@ -46,6 +47,7 @@ import { LoaderCircle } from '@lucide/vue'
 import { computed } from 'vue'
 import { RouterView } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'
+import OnboardingGuide from '@/components/OnboardingGuide.vue'
 import { useConnection } from '@/composables/useConnection'
 import { useCommonOffNotify } from '@/composables/useCommonOffNotify'
 import { useUpdateStatus } from '@/composables/useUpdateStatus'

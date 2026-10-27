@@ -10,7 +10,16 @@
     </span>
     <span class="min-w-0 flex-1">
       <span class="block text-[15px] font-semibold leading-tight">{{ title }}</span>
-      <span v-if="hint" class="block text-xs text-muted-foreground">{{ hint }}</span>
+      <Transition
+        enter-active-class="transition-[grid-template-rows,opacity] duration-200 ease-out"
+        enter-from-class="grid-rows-[0fr] opacity-0"
+        leave-active-class="transition-[grid-template-rows,opacity] duration-150 ease-in"
+        leave-to-class="grid-rows-[0fr] opacity-0"
+      >
+        <span v-if="hint" class="grid grid-rows-[1fr]">
+          <span class="block overflow-hidden text-xs text-muted-foreground">{{ hint }}</span>
+        </span>
+      </Transition>
     </span>
     <slot />
   </component>
