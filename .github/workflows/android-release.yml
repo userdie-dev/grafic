@@ -56,7 +56,9 @@ jobs:
       - name: Package OTA bundle
         run: |
           (cd dist && zip -r ../dist.zip .)
-          echo "{\"build\":\"build-${{ github.run_number }}\",\"url\":\"https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/dist.zip\"}" > version.json
+          # плагин обновления отказывается качать бандл без sha256-чексуммы
+          SUM=$(sha256sum dist.zip | cut -d' ' -f1)
+          echo "{\"build\":\"build-${{ github.run_number }}\",\"url\":\"https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/dist.zip\",\"checksum\":\"$SUM\"}" > version.json
 
       - name: Publish release
         uses: softprops/action-gh-release@v2

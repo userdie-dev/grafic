@@ -9,6 +9,8 @@ const PENDING_KEY = 'grafic.updatingTo'
 interface RemoteVersion {
   build: string
   url: string
+  /** sha256 of dist.zip; the updater plugin refuses to download a bundle without it */
+  checksum?: string
 }
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
@@ -70,7 +72,7 @@ export async function checkForUpdates({ manual = false } = {}): Promise<UpdateRe
   try {
     setUpdateStatus({ kind: 'downloading', text: 'Скачиваем обновление…' })
     await dropStaleBundles()
-    bundle = await CapacitorUpdater.download({ url: remote.url, version: remote.build })
+    bundle = await CapacitorUpdater.download({ url: remote.url, version: remote.build, checksum: remote.checksum })
   } catch (e) {
     setUpdateStatus(null)
     return fail(`Не удалось скачать обновление: ${errorText(e)}`, e)

@@ -38,7 +38,7 @@ beforeEach(() => {
   upd.list.mockResolvedValue({ bundles: [] })
   upd.current.mockResolvedValue({ bundle: { id: 'builtin' } })
   upd.delete.mockResolvedValue(undefined)
-  http.get.mockResolvedValue({ status: 200, data: { build: 'build-2', url: 'http://x/dist.zip' } })
+  http.get.mockResolvedValue({ status: 200, data: { build: 'build-2', url: 'http://x/dist.zip', checksum: 'abc' } })
 })
 
 describe('initUpdater', () => {
@@ -50,7 +50,7 @@ describe('initUpdater', () => {
 
   it('downloads and applies a newer build, remembering it for the next start', async () => {
     await initUpdater()
-    expect(upd.download).toHaveBeenCalledWith({ url: 'http://x/dist.zip', version: 'build-2' })
+    expect(upd.download).toHaveBeenCalledWith({ url: 'http://x/dist.zip', version: 'build-2', checksum: 'abc' })
     expect(upd.set).toHaveBeenCalledWith({ id: 'b2' })
     expect(status.value).toEqual({ kind: 'downloading', text: 'Скачиваем обновление…' })
     expect(localStorage.getItem('grafic.updatingTo')).toBe('build-2')
