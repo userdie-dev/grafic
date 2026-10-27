@@ -126,7 +126,7 @@ test.describe('resilience', () => {
   test('tells the user when the server is unreachable', async ({ app, network }) => {
     network.offline = true
     await app.reload()
-    await expect(app.getByText('Нет связи с сервером')).toBeVisible()
+    await expect(app.getByText('Подключение к серверу')).toBeVisible()
   })
 
   test('shows cached shifts while offline', async ({ app, network, api }) => {
@@ -137,7 +137,7 @@ test.describe('resilience', () => {
     await expect.poll(() => app.evaluate(() => localStorage.getItem('grafic.cache')?.includes('"start"') ?? false)).toBe(true)
     network.offline = true
     await app.reload()
-    await expect(app.getByText('Нет связи с сервером')).toBeVisible()
+    await expect(app.getByText('Подключение к серверу')).toBeVisible()
     await dayCell(app, DAY).click()
     await expect(drawer(app).getByText('09:00–18:00')).toBeVisible()
   })

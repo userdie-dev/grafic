@@ -14,9 +14,10 @@
       <div
         v-if="offline"
         role="status"
-        class="pointer-events-none fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-50 w-52 rounded-[4px] bg-destructive px-3 py-2.5 text-center text-xs font-medium text-white shadow-lg"
+        class="pointer-events-none fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-50 flex w-52 items-center justify-center gap-2 rounded-[4px] bg-blue-600 px-3 py-2.5 text-center text-xs font-medium text-white shadow-lg"
       >
-        Нет связи с сервером
+        <LoaderCircle class="size-4 shrink-0 animate-spin" aria-hidden="true" />
+        Подключение к серверу…
       </div>
     </Transition>
 
@@ -41,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import { LoaderCircle } from '@lucide/vue'
 import { computed } from 'vue'
 import { RouterView } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'

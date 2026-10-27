@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 const cap = vi.hoisted(() => ({ native: true }))
-const upd = vi.hoisted(() => ({ notifyAppReady: vi.fn(), download: vi.fn(), set: vi.fn() }))
+const upd = vi.hoisted(() => ({ notifyAppReady: vi.fn(), download: vi.fn(), set: vi.fn(), list: vi.fn(), current: vi.fn(), delete: vi.fn() }))
 const http = vi.hoisted(() => ({ get: vi.fn() }))
 
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => cap.native }, CapacitorHttp: http }))
@@ -19,7 +19,7 @@ vi.mock('@/lib/api', () => ({
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { flushPromises } from '@vue/test-utils'
 import App from '@/app/App.vue'
-import { initUpdater } from '@/app/config/updater'
+import { checkForUpdates, initUpdater } from '@/app/config/updater'
 import { setUpdateStatus, useUpdateStatus } from '@/composables/useUpdateStatus'
 
 // the test config defines __BUILD_ID__ implicitly as undefined; give it a value for the comparison
@@ -35,6 +35,9 @@ beforeEach(() => {
   upd.notifyAppReady.mockResolvedValue(undefined)
   upd.download.mockResolvedValue({ id: 'b2' })
   upd.set.mockResolvedValue(undefined)
+  upd.list.mockResolvedValue({ bundles: [] })
+  upd.current.mockResolvedValue({ bundle: { id: 'builtin' } })
+  upd.delete.mockResolvedValue(undefined)
   http.get.mockResolvedValue({ status: 200, data: { build: 'build-2', url: 'http://x/dist.zip' } })
 })
 
@@ -68,10 +71,28 @@ describe('initUpdater', () => {
     expect(status.value).toBeNull()
   })
 
-  it('reports a bad response from the update server', async () => {
+  it('keeps quiet on a bad response at start, but reports it on a manual check', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     http.get.mockResolvedValue({ status: 404, data: '' })
     await initUpdater()
+    expect(status.value).toBeNull()
+    expect(await checkForUpdates({ manual: true })).toBe('error')
     expect(status.value).toEqual({ kind: 'error', text: 'Не удалось проверить обновление: сервер ответил 404' })
+    warn.mockRestore()
+  })
+
+  it('tells the user they are up to date on a manual check', async () => {
+    http.get.mockResolvedValue({ status: 200, data: { build: 'build-1', url: 'u' } })
+    expect(await checkForUpdates({ manual: true })).toBe('latest')
+    expect(status.value).toEqual({ kind: 'updated', text: 'У вас последняя версия' })
+  })
+
+  it('removes stale bundles before downloading', async () => {
+    upd.list.mockResolvedValue({ bundles: [{ id: 'builtin' }, { id: 'cur' }, { id: 'old' }] })
+    upd.current.mockResolvedValue({ bundle: { id: 'cur' } })
+    await initUpdater()
+    expect(upd.delete).toHaveBeenCalledTimes(1)
+    expect(upd.delete).toHaveBeenCalledWith({ id: 'old' })
   })
 
   it('does not bother the user when the check fails for lack of network', async () => {
@@ -83,15 +104,17 @@ describe('initUpdater', () => {
     warn.mockRestore()
   })
 
-  it('shows the failure when the download or apply fails and forgets the pending build', async () => {
+  it('shows the failure when a manual download or apply fails and forgets the pending build', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     upd.download.mockRejectedValue(new Error('disk full'))
     await initUpdater()
+    expect(status.value).toBeNull()
+    await checkForUpdates({ manual: true })
     expect(status.value).toEqual({ kind: 'error', text: 'Не удалось скачать обновление: disk full' })
     expect(localStorage.getItem('grafic.updatingTo')).toBeNull()
 
     upd.download.mockRejectedValue('boom')
-    await initUpdater()
+    await checkForUpdates({ manual: true })
     expect(status.value!.text).toBe('Не удалось скачать обновление: boom')
     warn.mockRestore()
   })
@@ -100,7 +123,7 @@ describe('initUpdater', () => {
     vi.useFakeTimers()
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     upd.set.mockRejectedValue(new Error('Failed to fetch'))
-    const p = initUpdater()
+    const p = checkForUpdates({ manual: true })
     await vi.advanceTimersByTimeAsync(1000)
     expect(localStorage.getItem('grafic.updatingTo')).not.toBeNull()
     await vi.advanceTimersByTimeAsync(3000)

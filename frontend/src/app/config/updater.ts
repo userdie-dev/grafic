@@ -25,8 +25,73 @@ function pendingBuild(value?: string) {
   return null
 }
 
-// OTA-обновление веб-части: сверяем сборку с последним GitHub Release,
-// скачиваем новую и применяем (перезапуск webview).
+/** Drop leftovers of earlier attempts (a half-downloaded bundle with the same version makes download() fail). */
+async function dropStaleBundles() {
+  try {
+    const [{ bundles }, { bundle: current }] = await Promise.all([CapacitorUpdater.list(), CapacitorUpdater.current()])
+    for (const b of bundles) {
+      if (b.id !== current.id && b.id !== 'builtin') await CapacitorUpdater.delete({ id: b.id }).catch(() => {})
+    }
+  } catch (e) {
+    console.warn('bundle cleanup failed', e)
+  }
+}
+
+export type UpdateResult = 'latest' | 'updating' | 'error'
+
+/**
+ * Compares this build with the latest GitHub Release and applies a newer one (restarts the webview).
+ * Failures are only logged on the automatic check at start; a manual check reports them in the toast.
+ */
+export async function checkForUpdates({ manual = false } = {}): Promise<UpdateResult> {
+  if (!Capacitor.isNativePlatform()) return 'latest'
+
+  const fail = (text: string, e?: unknown): UpdateResult => {
+    console.warn(text, e)
+    if (manual) setUpdateStatus({ kind: 'error', text }, 8000)
+    return 'error'
+  }
+
+  let remote: RemoteVersion
+  try {
+    // нативный http: fetch из webview блокируется CORS (редирект github.com -> githubusercontent без заголовков)
+    const res = await CapacitorHttp.get({ url: `${RELEASE_BASE}/version.json`, headers: { 'Cache-Control': 'no-cache' } })
+    if (res.status !== 200) return fail(`Не удалось проверить обновление: сервер ответил ${res.status}`)
+    remote = (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) as RemoteVersion
+  } catch (e) {
+    return fail(`Не удалось проверить обновление: ${errorText(e)}`, e)
+  }
+  if (!remote.build || remote.build === __BUILD_ID__) {
+    if (manual) setUpdateStatus({ kind: 'updated', text: 'У вас последняя версия' }, 4000)
+    return 'latest'
+  }
+
+  let bundle
+  try {
+    setUpdateStatus({ kind: 'downloading', text: 'Скачиваем обновление…' })
+    await dropStaleBundles()
+    bundle = await CapacitorUpdater.download({ url: remote.url, version: remote.build })
+  } catch (e) {
+    setUpdateStatus(null)
+    return fail(`Не удалось скачать обновление: ${errorText(e)}`, e)
+  }
+
+  pendingBuild(remote.build)
+  try {
+    await CapacitorUpdater.set(bundle)
+  } catch (e) {
+    // set() reloads the webview, which can reject the pending bridge call ("Failed to fetch") even
+    // though the switch worked. If the page is still alive a moment later, it really failed.
+    console.warn('update set rejected', e)
+    await new Promise((r) => setTimeout(r, 3000))
+    pendingBuild('')
+    setUpdateStatus(null)
+    return fail(`Не удалось применить обновление: ${errorText(e)}`, e)
+  }
+  return 'updating'
+}
+
+// OTA-обновление веб-части при старте: тихая проверка, ошибки только в консоль.
 export async function initUpdater() {
   if (!Capacitor.isNativePlatform()) return
 
@@ -39,41 +104,5 @@ export async function initUpdater() {
     setUpdateStatus({ kind: 'updated', text: `Приложение обновлено до версии ${__APP_VERSION__}` }, 5000)
   }
 
-  let remote: RemoteVersion
-  try {
-    // нативный http: fetch из webview блокируется CORS (редирект github.com -> githubusercontent без заголовков)
-    const res = await CapacitorHttp.get({ url: `${RELEASE_BASE}/version.json`, headers: { 'Cache-Control': 'no-cache' } })
-    if (res.status !== 200) {
-      setUpdateStatus({ kind: 'error', text: `Не удалось проверить обновление: сервер ответил ${res.status}` }, 8000)
-      return
-    }
-    remote = (typeof res.data === 'string' ? JSON.parse(res.data) : res.data) as RemoteVersion
-  } catch (e) {
-    // no network is the usual reason, not worth a toast
-    console.warn('update check failed', e)
-    return
-  }
-  if (!remote.build || remote.build === __BUILD_ID__) return
-
-  let bundle
-  try {
-    setUpdateStatus({ kind: 'downloading', text: 'Скачиваем обновление…' })
-    bundle = await CapacitorUpdater.download({ url: remote.url, version: remote.build })
-  } catch (e) {
-    console.warn('update download failed', e)
-    setUpdateStatus({ kind: 'error', text: `Не удалось скачать обновление: ${errorText(e)}` }, 10000)
-    return
-  }
-
-  pendingBuild(remote.build)
-  try {
-    await CapacitorUpdater.set(bundle)
-  } catch (e) {
-    // set() reloads the webview, which can reject the pending bridge call ("Failed to fetch") even
-    // though the switch worked. If the page is still alive a moment later, it really failed.
-    console.warn('update set rejected', e)
-    await new Promise((r) => setTimeout(r, 3000))
-    pendingBuild('')
-    setUpdateStatus({ kind: 'error', text: `Не удалось применить обновление: ${errorText(e)}` }, 10000)
-  }
+  await checkForUpdates()
 }
