@@ -4,8 +4,10 @@ import { User } from '../src/entities/user.entity';
 import { Shift } from '../src/entities/shift.entity';
 import { Subscription } from '../src/entities/subscription.entity';
 
-// Явный импорт pg чтобы Vercel включил его в бандл
-import * as pg from 'pg';
+// Явный импорт pg и установка в глобальную область для TypeORM
+import pg from 'pg';
+// @ts-ignore
+global.pg = pg;
 
 let dataSource: DataSource | null = null;
 
@@ -31,6 +33,8 @@ async function getDataSource() {
         max: 1,
         idleTimeoutMillis: 3000,
       },
+      // Явно передаем driver
+      driver: pg as any,
     });
 
     console.log('Initializing DataSource...');
