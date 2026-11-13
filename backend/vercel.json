@@ -17,6 +17,10 @@
       "dest": "api/test-db.ts"
     },
     {
+      "src": "/test-pg",
+      "dest": "api/test-pg.ts"
+    },
+    {
       "src": "/(.*)",
       "dest": "api/index.ts"
     }
