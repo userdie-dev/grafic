@@ -13,6 +13,10 @@
       "dest": "api/health.ts"
     },
     {
+      "src": "/test-neon",
+      "dest": "api/test-neon.ts"
+    },
+    {
       "src": "/simple-pg",
       "dest": "api/simple-pg.ts"
     },
