@@ -14,16 +14,23 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 const getDatabaseConfig = () => {
   // If DATABASE_URL is set (production on Vercel with external DB)
   if (process.env.DATABASE_URL) {
+    console.log('Using PostgreSQL from DATABASE_URL');
     return {
       type: 'postgres' as const,
       url: process.env.DATABASE_URL,
       entities: [User, Shift, Subscription],
       synchronize: true,
       ssl: { rejectUnauthorized: false },
+      connectTimeoutMS: 10000,
+      extra: {
+        max: 1, // Minimal pool size for serverless
+        idleTimeoutMillis: 3000,
+      },
     };
   }
   
   // Local development with SQLite
+  console.log('Using SQLite for local development');
   return {
     type: 'better-sqlite3' as const,
     database: process.env.DB_PATH ?? 'grafic.sqlite',
