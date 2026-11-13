@@ -5,6 +5,9 @@ import { ValidationPipe } from '@nestjs/common';
 import express from 'express';
 import { AppModule } from '../src/app.module';
 
+// Явный импорт pg чтобы Vercel включил его в бандл
+import * as pg from 'pg';
+
 const server = express();
 let app: any;
 

@@ -4,6 +4,9 @@ import { User } from '../src/entities/user.entity';
 import { Shift } from '../src/entities/shift.entity';
 import { Subscription } from '../src/entities/subscription.entity';
 
+// Явный импорт pg чтобы Vercel включил его в бандл
+import * as pg from 'pg';
+
 let dataSource: DataSource | null = null;
 
 async function getDataSource() {
@@ -15,6 +18,7 @@ async function getDataSource() {
     }
 
     console.log('Creating DataSource with URL:', databaseUrl.substring(0, 30) + '...');
+    console.log('pg module loaded:', !!pg);
     
     dataSource = new DataSource({
       type: 'postgres',
