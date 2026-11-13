@@ -13,6 +13,10 @@
       "dest": "api/health.ts"
     },
     {
+      "src": "/simple-pg",
+      "dest": "api/simple-pg.ts"
+    },
+    {
       "src": "/debug-modules",
       "dest": "api/debug-modules.ts"
     },
