@@ -23,33 +23,13 @@
           :key="group.id"
           class="rounded-2xl bg-secondary p-4"
         >
-          <div class="mb-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
               <span
                 class="size-4 shrink-0 rounded-full"
                 :style="{ background: group.color }"
               />
-              <h3 class="font-semibold">{{ group.name }}</h3>
-            </div>
-            <div class="flex gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Редактировать"
-                class="size-10 rounded-full"
-                @click="editGroup(group)"
-              >
-                <RiEditLine class="size-5" />
-              </Button>
-              <Button
-                variant="destructive"
-                size="icon"
-                aria-label="Удалить группу"
-                class="size-10 rounded-full"
-                @click="store.removeGroup(group.id)"
-              >
-                <RiDeleteBinLine class="size-5" />
-              </Button>
+              <h3 class="truncate font-semibold">{{ group.name }}</h3>
             </div>
           </div>
 
@@ -77,15 +57,35 @@
             </div>
             <p v-else class="text-sm text-muted-foreground">Нет участников</p>
 
-            <Button
-              size="sm"
-              variant="outline"
-              class="mt-2 rounded-full"
-              @click="addMember(group)"
-            >
-              <RiAddLine class="size-4" />
-              Добавить участника
-            </Button>
+            <div class="flex flex-wrap gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                class="flex-1 min-w-[120px] rounded-full"
+                @click="addMember(group)"
+              >
+                <RiAddLine class="size-4 mr-1" />
+                Добавить
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                class="flex-1 min-w-[120px] rounded-full"
+                @click="editGroup(group)"
+              >
+                <RiEditLine class="size-4 mr-1" />
+                Изменить
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                class="flex-1 min-w-[120px] rounded-full"
+                @click="store.removeGroup(group.id)"
+              >
+                <RiDeleteBinLine class="size-4 mr-1" />
+                Удалить
+              </Button>
+            </div>
           </div>
         </div>
       </div>
