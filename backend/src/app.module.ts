@@ -10,14 +10,31 @@ import { EventsModule } from './events/events.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
+// Database configuration based on environment
+const getDatabaseConfig = () => {
+  // If DATABASE_URL is set (production on Vercel with external DB)
+  if (process.env.DATABASE_URL) {
+    return {
+      type: 'postgres' as const,
+      url: process.env.DATABASE_URL,
+      entities: [User, Shift, Subscription],
+      synchronize: true,
+      ssl: { rejectUnauthorized: false },
+    };
+  }
+  
+  // Local development with SQLite
+  return {
+    type: 'better-sqlite3' as const,
+    database: process.env.DB_PATH ?? 'grafic.sqlite',
+    entities: [User, Shift, Subscription],
+    synchronize: true,
+  };
+};
+
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'better-sqlite3',
-      database: process.env.DB_PATH ?? 'grafic.sqlite',
-      entities: [User, Shift, Subscription],
-      synchronize: true, // fine for SQLite dev; switch to migrations before production
-    }),
+    TypeOrmModule.forRoot(getDatabaseConfig()),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     DevicesModule,
     EventsModule,

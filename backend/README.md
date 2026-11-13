@@ -94,6 +94,24 @@ backend/
 
 ## Production Deployment
 
-Приложение развернуто на Vercel: https://grafic-rose.vercel.app/
+### Vercel
 
-Для деплоя используется встроенная поддержка Vercel для NestJS.
+Приложение поддерживает деплой на Vercel.
+
+**Требования:**
+- PostgreSQL база данных (например, Vercel Postgres, Supabase, Neon)
+
+**Настройка:**
+
+1. Создайте PostgreSQL базу данных
+2. В настройках Vercel проекта добавьте переменную окружения:
+   ```
+   DATABASE_URL=postgresql://user:password@host:5432/database
+   ```
+3. Deploy автоматически произойдет при push в main
+
+**Локальная разработка использует SQLite**, production на Vercel использует PostgreSQL.
+
+### Альтернатива: Railway, Render, Fly.io
+
+Для этих платформ настройте `DATABASE_URL` и деплойте как обычное Node.js приложение.
