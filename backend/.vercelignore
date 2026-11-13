@@ -1,0 +1,3 @@
+# Vercel ignore file
+# Don't ignore node_modules - Vercel needs to bundle dependencies
+!node_modules
