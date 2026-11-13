@@ -9,6 +9,10 @@
   },
   "routes": [
     {
+      "src": "/working",
+      "dest": "api/working.ts"
+    },
+    {
       "src": "/health",
       "dest": "api/health.ts"
     },
