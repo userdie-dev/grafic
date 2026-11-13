@@ -1,7 +1,9 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,22 +13,27 @@ async function bootstrap() {
 }
 
 // For Vercel serverless
+const server = express();
 let cachedApp: any;
 
 async function getApp() {
   if (!cachedApp) {
-    const app = await NestFactory.create(AppModule);
+    const expressApp = express();
+    const app = await NestFactory.create(
+      AppModule,
+      new ExpressAdapter(expressApp),
+    );
     app.enableCors();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
-    cachedApp = app;
+    cachedApp = expressApp;
   }
   return cachedApp;
 }
 
 export default async function handler(req: any, res: any) {
   const app = await getApp();
-  return app.getHttpAdapter().getInstance()(req, res);
+  app(req, res);
 }
 
 // For local development
