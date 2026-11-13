@@ -11,6 +11,8 @@ const props = defineProps<{
   /** Minute grid step; the current value is always kept selectable. */
   step?: number
   title?: string
+  /** Allow selecting hours beyond 23 (for next day end time) */
+  allowNextDay?: boolean
   class?: HTMLAttributes['class']
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
@@ -23,7 +25,11 @@ const draft = ref('')
 const hour = computed(() => (draft.value ? Number(draft.value.slice(0, 2)) : null))
 const minute = computed(() => (draft.value ? Number(draft.value.slice(3, 5)) : null))
 
-const hours = Array.from({ length: 24 }, (_, i) => i)
+const hours = computed(() => {
+  // For end time, allow selecting next day hours (24-47)
+  const maxHour = props.allowNextDay ? 48 : 24
+  return Array.from({ length: maxHour }, (_, i) => i)
+})
 const minutes = computed(() => {
   const step = props.step ?? 5
   const list = Array.from({ length: Math.ceil(60 / step) }, (_, i) => i * step)

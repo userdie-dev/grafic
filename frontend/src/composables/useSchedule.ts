@@ -16,7 +16,7 @@ import { setConnection } from '@/composables/useConnection'
 export const COLORS = ['#2563eb', '#16a34a', '#d97706', '#db2777', '#7c3aed', '#0891b2', '#dc2626', '#65a30d']
 export const ME = 'me'
 
-export type Entry = { who: string; name: string; color: string; shift: Shift }
+export type Entry = { who: string; name: string; color: string; shift: Shift; isGroup?: boolean }
 
 /** Queries, mutations and derived calendar data on top of the client store. */
 export function useSchedule() {
@@ -56,32 +56,88 @@ export function useSchedule() {
     ? MOCK_FRIENDS.map((f) => ({ id: f.id, name: store.state.labels[f.id] ?? f.name, subId: '' }))
     : []
 
-  const people = computed(() => [
-    { id: ME, name: 'Я', color: store.state.colors[ME] ?? COLORS[0]!, subId: '' },
-    ...subs.value.map((s, i) => ({
-      id: s.ownerId,
-      name: store.state.labels[s.ownerId] ?? 'Друг',
-      color: store.state.colors[s.ownerId] ?? COLORS[(i + 1) % COLORS.length]!,
-      subId: s.id,
-    })),
-    ...mockPeople.map((m, i) => ({ ...m, color: COLORS[(subs.value.length + i + 1) % COLORS.length]! })),
-  ])
+  // People list: individual people + groups (members of groups are hidden from individual display)
+  const people = computed(() => {
+    const groups = store.state.groups
+    const groupMemberIds = new Set(groups.flatMap(g => g.memberIds))
+    
+    const individuals = [
+      { id: ME, name: 'Я', color: store.state.colors[ME] ?? COLORS[0]!, subId: '', isGroup: false },
+      ...subs.value
+        .filter(s => !groupMemberIds.has(s.ownerId)) // Exclude people who are in groups
+        .map((s, i) => ({
+          id: s.ownerId,
+          name: store.state.labels[s.ownerId] ?? 'Друг',
+          color: store.state.colors[s.ownerId] ?? COLORS[(i + 1) % COLORS.length]!,
+          subId: s.id,
+          isGroup: false,
+        })),
+      ...mockPeople
+        .filter(m => !groupMemberIds.has(m.id))
+        .map((m, i) => ({ 
+          ...m, 
+          color: COLORS[(subs.value.length + i + 1) % COLORS.length]!,
+          isGroup: false,
+        })),
+    ]
+    
+    const groupEntries = groups.map(g => ({
+      id: g.id,
+      name: g.name,
+      color: g.color,
+      subId: '',
+      isGroup: true,
+      memberIds: g.memberIds,
+    }))
+    
+    return [...individuals, ...groupEntries]
+  })
 
   const myShifts = computed(() => (mineQuery.data.value ?? []).map(toLocalShift))
 
   /** date -> entries of all visible people */
   const byDate = computed(() => {
     const map: Record<string, Entry[]> = {}
+    
     people.value.forEach((p, i) => {
       if (store.state.hidden.includes(p.id)) return
-      const list =
-        p.id === ME
-          ? myShifts.value
-          : p.id.startsWith('mock-')
-            ? mockShifts(p.id, range.value.from, range.value.to)
-            : (friendQueries.value[i - 1]?.data ?? []).map(toLocalShift)
-      for (const shift of list) (map[shift.date] ??= []).push({ who: p.id, name: p.name, color: p.color, shift })
+      
+      if ('isGroup' in p && p.isGroup && 'memberIds' in p) {
+        // For groups, aggregate shifts from all members
+        const memberIds = p.memberIds as string[]
+        memberIds.forEach(memberId => {
+          const memberIndex = subs.value.findIndex(s => s.ownerId === memberId)
+          const list = memberIndex >= 0
+            ? (friendQueries.value[memberIndex]?.data ?? []).map(toLocalShift)
+            : memberId.startsWith('mock-')
+              ? mockShifts(memberId, range.value.from, range.value.to)
+              : []
+          
+          for (const shift of list) {
+            (map[shift.date] ??= []).push({ 
+              who: p.id, // Group ID
+              name: p.name, // Group name
+              color: p.color, // Group color
+              shift,
+              isGroup: true // Mark as group entry
+            })
+          }
+        })
+      } else {
+        // Individual person
+        const list =
+          p.id === ME
+            ? myShifts.value
+            : p.id.startsWith('mock-')
+              ? mockShifts(p.id, range.value.from, range.value.to)
+              : (friendQueries.value[i - 1]?.data ?? []).map(toLocalShift)
+        
+        for (const shift of list) {
+          (map[shift.date] ??= []).push({ who: p.id, name: p.name, color: p.color, shift, isGroup: false })
+        }
+      }
     })
+    
     for (const list of Object.values(map)) list.sort((a, b) => a.shift.start.localeCompare(b.shift.start))
     return map
   })
@@ -112,6 +168,7 @@ export function useSchedule() {
   /** public holidays of the shown grid, by local calendar day (see holidays.ts) */
   const holidays = computed(() => {
     const map: Record<string, string> = {}
+    // monthGrid includes all days visible in the calendar, including days from adjacent months
     for (const day of monthGrid(store.month)) {
       const date = iso(day)
       const name = holidayName(date)

@@ -8,19 +8,28 @@
       :class="{ 'line-through opacity-40': hidden.includes(p.id) }"
       @click="emit('pick', p)"
     >
-      <span class="size-5 shrink-0 rounded-full" :style="{ background: p.color }" /><span class="min-w-0 truncate">{{ p.name }}</span>
+      <RiGroup2Line v-if="isGroup(p)" class="size-5 shrink-0" :style="{ color: p.color }" />
+      <span v-else class="size-5 shrink-0 rounded-full" :style="{ background: p.color }" />
+      <span class="min-w-0 truncate">{{ p.name }}</span>
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { RiGroup2Line } from '@remixicon/vue'
+
 export interface Person {
   id: string
   name: string
   color: string
   subId?: string
+  isGroup?: boolean
 }
 
 defineProps<{ people: Person[]; hidden: string[] }>()
 const emit = defineEmits<{ pick: [person: Person] }>()
+
+function isGroup(p: Person) {
+  return p.isGroup === true
+}
 </script>

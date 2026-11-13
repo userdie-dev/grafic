@@ -28,10 +28,32 @@ export function toLocalShift<T extends Pick<Shift, 'date' | 'start' | 'end'>>(sh
 /** Device-local shift being saved -> UTC shift for the server. */
 export function toUtcInput(shift: ShiftInput): ShiftInput {
   const [y, m, d] = shift.date.split('-').map(Number)
-  // an overnight shift ends on the next calendar day, not 24 hours later: the two differ on DST change nights
-  const at = (day: number) => (time: string) => new Date(y!, m! - 1, day, +time.slice(0, 2), +time.slice(3))
-  const start = at(d!)(shift.start)
-  const end = at(shift.end <= shift.start ? d! + 1 : d!)(shift.end)
+  
+  // Parse time, supporting hours >= 24 for next-day end times
+  const parseTime = (time: string) => {
+    const [h, min] = time.split(':').map(Number)
+    return { hours: h!, minutes: min! }
+  }
+  
+  const startTime = parseTime(shift.start)
+  const endTime = parseTime(shift.end)
+  
+  // Start time on the selected day
+  const start = new Date(y!, m! - 1, d!, startTime.hours, startTime.minutes)
+  
+  // End time: if hours >= 24, it's next day
+  let endDay = d!
+  let endHours = endTime.hours
+  if (endHours >= 24) {
+    endDay = d! + 1
+    endHours = endHours - 24
+  } else if (endTime.hours < startTime.hours || (endTime.hours === startTime.hours && endTime.minutes <= startTime.minutes)) {
+    // End time is earlier than start, so it's next day
+    endDay = d! + 1
+  }
+  
+  const end = new Date(y!, m! - 1, endDay, endHours, endTime.minutes)
+  
   return {
     ...shift,
     date: `${start.getUTCFullYear()}-${p2(start.getUTCMonth() + 1)}-${p2(start.getUTCDate())}`,

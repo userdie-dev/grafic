@@ -21,11 +21,13 @@
 
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
-import { RiCalendarLine, RiSettings3Line, RiShareLine } from '@remixicon/vue'
+import { RiCalendarLine, RiSettings3Line, RiShareLine, RiGroup2Line, RiListCheck2 } from '@remixicon/vue'
 
 const route = useRoute()
 const pages = [
   { to: '/', label: 'Календарь', icon: RiCalendarLine },
+  { to: '/groups', label: 'Группы', icon: RiGroup2Line },
+  { to: '/presets', label: 'Пресеты', icon: RiListCheck2 },
   { to: '/share', label: 'Поделиться', icon: RiShareLine },
   { to: '/settings', label: 'Настройки', icon: RiSettings3Line },
 ] as const

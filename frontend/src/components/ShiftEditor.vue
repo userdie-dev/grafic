@@ -33,28 +33,56 @@
         >Смены на выбранный день</DrawerDescription
       >
 
-      <div
+      <div 
         v-if="!form"
-        class="mx-1 mb-3 flex shrink-0 gap-1 rounded-full bg-muted p-1 text-xs"
-        role="tablist"
-        aria-label="Вид смен"
+        ref="swipeTarget"
+        class="mx-1 mb-3 flex items-center justify-between gap-2"
       >
-        <button
-          v-for="tab in TABS"
-          :key="tab.id"
+        <Button
+          v-if="!form"
           type="button"
-          role="tab"
-          :aria-selected="mode === tab.id"
-          class="flex-1 rounded-full px-3 py-1.5 font-medium transition"
-          :class="
-            mode === tab.id
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground'
-          "
-          @click="mode = tab.id"
+          variant="ghost"
+          size="icon"
+          aria-label="Предыдущий день"
+          class="shrink-0 rounded-full"
+          @click="shiftDay(-1)"
+          ><RiArrowLeftSLine
+        /></Button>
+        
+        <div
+          v-if="!form"
+          class="flex flex-1 shrink-0 gap-1 rounded-full bg-muted p-1 text-xs"
+          role="tablist"
+          aria-label="Вид смен"
         >
-          {{ tab.label }}
-        </button>
+          <button
+            v-for="tab in TABS"
+            :key="tab.id"
+            type="button"
+            role="tab"
+            :aria-selected="mode === tab.id"
+            class="flex-1 rounded-full px-3 py-1.5 font-medium transition"
+            :class="
+              mode === tab.id
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground'
+            "
+            @click="mode = tab.id"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+        
+        <Button
+          v-if="!form"
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Следующий день"
+          class="shrink-0 rounded-full"
+          @click="shiftDay(1)"
+          ><RiArrowRightSLine
+        /></Button>
       </div>
 
       <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-1">
@@ -78,8 +106,9 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { format, parseISO } from "date-fns";
-import { RiAddLine, RiArrowLeftLine } from "@remixicon/vue";
+import { addDays, format, parseISO } from "date-fns";
+import { useSwipe } from "@vueuse/core";
+import { RiAddLine, RiArrowLeftLine, RiArrowLeftSLine, RiArrowRightSLine } from "@remixicon/vue";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -91,6 +120,7 @@ import { useDrawerClose } from "@/composables/useDrawerClose";
 import { useDayEditor } from "@/composables/useDayEditor";
 import { useSchedule } from "@/composables/useSchedule";
 import type { Shift } from "@/lib/dto";
+import { iso } from "@/lib/dates";
 import DayTimeline from "./DayTimeline.vue";
 import ShiftForm from "./shift/ShiftForm.vue";
 import ShiftList from "./shift/ShiftList.vue";
@@ -114,4 +144,23 @@ const backToList = () => {
 };
 
 const dayEntries = computed(() => s.byDate[editor.date.value] ?? []);
+
+const shiftDay = (offset: number) => {
+  const currentDate = parseISO(editor.date.value);
+  const newDate = addDays(currentDate, offset);
+  editor.open(iso(newDate));
+};
+
+// Swipe support for day navigation
+const swipeTarget = ref<HTMLElement>();
+const { direction } = useSwipe(swipeTarget, {
+  threshold: 50,
+  onSwipeEnd(e, direction) {
+    if (direction === "left") {
+      shiftDay(1); // Next day
+    } else if (direction === "right") {
+      shiftDay(-1); // Previous day
+    }
+  },
+});
 </script>

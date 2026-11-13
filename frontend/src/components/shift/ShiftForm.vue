@@ -1,21 +1,59 @@
 <template>
   <form class="space-y-2" @submit.prevent="submit">
     <div v-if="!editing" class="space-y-1.5">
-      <div class="flex flex-wrap gap-1.5">
+      <div class="flex gap-1.5">
         <Button
-          v-for="p in presets.all"
-          :key="p.id"
           type="button"
           size="sm"
           variant="secondary"
-          :class="tone(preset.id === p.id && !creating)"
-          class="rounded-full"
-          @click="setPreset(p)"
-        >{{ p.label }}</Button>
-        <Button type="button" size="sm" variant="secondary" :class="tone(creating)" class="rounded-full" aria-label="Создать свой пресет" @click="creating = !creating"><RiAddLine /></Button>
+          :class="tone(mode === 'single')"
+          class="flex-1 rounded-full"
+          @click="mode = 'single'"
+        >Один день</Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          :class="tone(mode === 'preset')"
+          class="flex-1 rounded-full"
+          @click="mode = 'preset'"
+        >Пресет</Button>
       </div>
-      <PresetCreator v-if="creating" @created="setPreset" />
-      <div class="flex gap-1.5">
+      
+      <div v-if="mode === 'preset'" class="space-y-1.5">
+        <div class="flex flex-wrap gap-1.5">
+          <Button
+            v-for="p in presets.all"
+            :key="p.id"
+            type="button"
+            size="sm"
+            variant="secondary"
+            :class="tone(preset.id === p.id && !creating)"
+            class="rounded-full"
+            @click="setPreset(p)"
+          >{{ p.label }}</Button>
+          <Button type="button" size="sm" variant="secondary" :class="tone(creating)" class="rounded-full" aria-label="Создать свой пресет" @click="creating = !creating"><RiAddLine /></Button>
+        </div>
+        <PresetCreator v-if="creating" @created="setPreset" />
+        <div class="flex gap-1.5">
+          <Button
+            v-for="k in KINDS"
+            :key="k.id"
+            type="button"
+            size="sm"
+            variant="secondary"
+            :class="tone(kind === k.id)"
+            class="flex-1 rounded-full"
+            @click="setKind(k.id)"
+          >{{ k.label }}</Button>
+        </div>
+        <p v-if="hint" class="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>{{ hint }}</span>
+          <button v-if="preset.custom" type="button" class="shrink-0 text-destructive underline" @click="deletePreset">Удалить пресет</button>
+        </p>
+      </div>
+      
+      <div v-else class="flex gap-1.5">
         <Button
           v-for="k in KINDS"
           :key="k.id"
@@ -27,15 +65,11 @@
           @click="setKind(k.id)"
         >{{ k.label }}</Button>
       </div>
-      <p v-if="hint" class="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>{{ hint }}</span>
-        <button v-if="preset.custom" type="button" class="shrink-0 text-destructive underline" @click="deletePreset">Удалить пресет</button>
-      </p>
     </div>
 
     <div class="flex gap-2">
       <label class="flex-1 space-y-1 text-xs text-muted-foreground">Начало<TimePicker v-model="start" /></label>
-      <label class="flex-1 space-y-1 text-xs text-muted-foreground">Конец<TimePicker v-model="end" /></label>
+      <label class="flex-1 space-y-1 text-xs text-muted-foreground">Конец<TimePicker v-model="end" :allow-next-day="true" /></label>
     </div>
     <Input v-model="note" maxlength="200" placeholder="Заметка" class="h-10" />
     <p v-if="problem" class="text-sm text-destructive">{{ problem }}</p>
@@ -62,6 +96,7 @@ import { usePresetsStore } from '@/stores/presets'
 import PresetCreator from './PresetCreator.vue'
 
 type Kind = 'day' | 'night'
+type Mode = 'single' | 'preset'
 
 const KINDS: { id: Kind; label: string }[] = [
   { id: 'day', label: 'Дневные' },
@@ -76,11 +111,12 @@ const editor = useDayEditor()
 
 const presets = usePresetsStore()
 
+const mode = ref<Mode>('single')
 const preset = ref<Preset>(BUILTIN_PRESETS[0]!)
 const kind = ref<Kind>('day')
 const creating = ref(false)
-const start = ref(props.editing?.start ?? preset.value.day[0])
-const end = ref(props.editing?.end ?? preset.value.day[1])
+const start = ref(props.editing?.start ?? '09:00')
+const end = ref(props.editing?.end ?? '18:00')
 const note = ref(props.editing?.note ?? '')
 const problem = ref('')
 
@@ -100,7 +136,18 @@ function setPreset(p: Preset) {
 
 function setKind(k: Kind) {
   kind.value = k
-  applyTimes()
+  if (mode.value === 'preset') {
+    applyTimes()
+  } else {
+    // В режиме "один день" просто устанавливаем стандартное время
+    if (k === 'day') {
+      start.value = '09:00'
+      end.value = '18:00'
+    } else {
+      start.value = '20:00'
+      end.value = '08:00'
+    }
+  }
 }
 
 function deletePreset() {
@@ -114,8 +161,14 @@ function buildItems(): ShiftInput[] | null {
   const first = parseISO(editor.date.value)
   const add = (d: Date) => items.push({ date: iso(d), start: start.value, end: end.value, note: note.value || null })
   
-  // Single shift: editing or 'once' preset
-  if (props.editing || isOnce.value) {
+  // Single shift: editing or single mode
+  if (props.editing || mode.value === 'single') {
+    add(first)
+    return items
+  }
+  
+  // Preset mode: 'once' preset
+  if (isOnce.value) {
     add(first)
     return items
   }
@@ -150,8 +203,17 @@ function submit() {
     problem.value = 'Слишком длинный период (максимум 366 смен)'
     return
   }
-  // the server keys shifts by date+start, so a changed start time must replace the old row
-  const removeIds = props.editing && props.editing.start !== start.value ? [props.editing.id] : []
+  
+  // When editing a shift, we need to handle several cases:
+  // 1. If start time changed, delete old shift (server keys by date+start)
+  // 2. If we're editing a single shift but it was part of a preset, only delete that specific shift
+  let removeIds: string[] = []
+  
+  if (props.editing) {
+    // Always remove the edited shift when any field changes
+    removeIds = [props.editing.id]
+  }
+  
   editor.save(items, removeIds)
   emit('done')
 }
