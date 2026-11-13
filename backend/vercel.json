@@ -8,12 +8,20 @@
     {
       "src": "api/health.ts",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/test-db.ts",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/health",
       "dest": "api/health.ts"
+    },
+    {
+      "src": "/test-db",
+      "dest": "api/test-db.ts"
     },
     {
       "src": "/(.*)",
