@@ -74,17 +74,17 @@
         
         <form class="space-y-4 overflow-y-auto p-4" @submit.prevent="savePreset">
           <div class="space-y-2">
-            <label class="text-sm font-medium">Название</label>
+            <label class="block text-sm font-medium">Название</label>
             <Input v-model="presetForm.label" placeholder="Например: Моя смена" required />
           </div>
 
           <div class="space-y-2">
-            <label class="text-sm font-medium">Описание</label>
+            <label class="block text-sm font-medium">Описание</label>
             <Input v-model="presetForm.hint" placeholder="Краткое описание (необязательно)" />
           </div>
 
           <div class="space-y-2">
-            <label class="text-sm font-medium">Тип повторения</label>
+            <label class="block text-sm font-medium">Тип повторения</label>
             <div class="flex flex-wrap gap-2">
               <Button
                 v-for="type in RULE_TYPES"
@@ -103,19 +103,19 @@
 
           <!-- Cycle rule parameters -->
           <div v-if="presetForm.ruleType === 'cycle'" class="flex gap-2">
-            <div class="flex-1 space-y-1">
-              <label class="text-xs text-muted-foreground">Рабочих дней</label>
+            <div class="flex-1 space-y-2">
+              <label class="block text-xs font-medium text-muted-foreground">Рабочих дней</label>
               <Input v-model.number="presetForm.cycleWork" type="number" min="1" max="30" required />
             </div>
-            <div class="flex-1 space-y-1">
-              <label class="text-xs text-muted-foreground">Выходных дней</label>
+            <div class="flex-1 space-y-2">
+              <label class="block text-xs font-medium text-muted-foreground">Выходных дней</label>
               <Input v-model.number="presetForm.cycleOff" type="number" min="1" max="30" required />
             </div>
           </div>
 
           <!-- Weekdays rule parameters -->
           <div v-if="presetForm.ruleType === 'weekdays'" class="space-y-2">
-            <label class="text-sm font-medium">Рабочие дни недели</label>
+            <label class="block text-sm font-medium">Рабочие дни недели</label>
             <div class="flex flex-wrap gap-2">
               <Button
                 v-for="(day, index) in WEEKDAYS"
@@ -133,25 +133,13 @@
           </div>
 
           <div class="space-y-2">
-            <label class="text-sm font-medium">Дневная смена</label>
+            <label class="block text-sm font-medium">Время смены</label>
             <div class="flex gap-2">
               <div class="flex-1">
-                <TimePicker v-model="presetForm.dayStart" title="Начало дня" />
+                <TimePicker v-model="presetForm.dayStart" title="Начало" />
               </div>
               <div class="flex-1">
-                <TimePicker v-model="presetForm.dayEnd" title="Конец дня" :allow-next-day="true" />
-              </div>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <label class="text-sm font-medium">Ночная смена</label>
-            <div class="flex gap-2">
-              <div class="flex-1">
-                <TimePicker v-model="presetForm.nightStart" title="Начало ночи" />
-              </div>
-              <div class="flex-1">
-                <TimePicker v-model="presetForm.nightEnd" title="Конец ночи" :allow-next-day="true" />
+                <TimePicker v-model="presetForm.dayEnd" title="Конец" :allow-next-day="true" />
               </div>
             </div>
           </div>
@@ -214,8 +202,6 @@ const presetForm = ref({
   weekdays: [1, 2, 3, 4, 5] as number[],
   dayStart: '09:00',
   dayEnd: '18:00',
-  nightStart: '20:00',
-  nightEnd: '08:00',
 })
 
 function toggleWeekday(day: number) {
@@ -238,8 +224,6 @@ function editPreset(preset: Preset) {
     weekdays: preset.rule.type === 'weekdays' ? [...preset.rule.days] : [1, 2, 3, 4, 5],
     dayStart: preset.day[0],
     dayEnd: preset.day[1],
-    nightStart: preset.night[0],
-    nightEnd: preset.night[1],
   }
   showCreateDialog.value = true
 }
@@ -271,7 +255,7 @@ function savePreset() {
     hint: presetForm.value.hint,
     rule,
     day: [presetForm.value.dayStart, presetForm.value.dayEnd] as [string, string],
-    night: [presetForm.value.nightStart, presetForm.value.nightEnd] as [string, string],
+    night: [presetForm.value.dayStart, presetForm.value.dayEnd] as [string, string], // Same as day
   }
 
   if (editingPreset.value) {
@@ -298,8 +282,6 @@ function cancelEdit() {
     weekdays: [1, 2, 3, 4, 5],
     dayStart: '09:00',
     dayEnd: '18:00',
-    nightStart: '20:00',
-    nightEnd: '08:00',
   }
 }
 </script>

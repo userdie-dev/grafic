@@ -41,12 +41,12 @@
         <Button
           v-if="!form"
           type="button"
-          variant="ghost"
+          variant="outline"
           size="icon"
           aria-label="Предыдущий день"
-          class="shrink-0 rounded-full"
+          class="shrink-0 rounded-full border-2"
           @click="shiftDay(-1)"
-          ><RiArrowLeftSLine
+          ><RiArrowLeftSLine class="size-5"
         /></Button>
         
         <div
@@ -76,12 +76,12 @@
         <Button
           v-if="!form"
           type="button"
-          variant="ghost"
+          variant="outline"
           size="icon"
           aria-label="Следующий день"
-          class="shrink-0 rounded-full"
+          class="shrink-0 rounded-full border-2"
           @click="shiftDay(1)"
-          ><RiArrowRightSLine
+          ><RiArrowRightSLine class="size-5"
         /></Button>
       </div>
 

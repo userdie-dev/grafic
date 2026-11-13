@@ -103,18 +103,18 @@
         
         <form class="space-y-4 p-4" @submit.prevent="saveGroup">
           <div class="space-y-2">
-            <label class="text-sm font-medium">Название группы</label>
+            <label class="block text-sm font-medium">Название группы</label>
             <Input v-model="groupForm.name" placeholder="Например: Работа, Семья" required />
           </div>
           
           <div class="space-y-2">
-            <label class="text-sm font-medium">Цвет</label>
-            <div class="flex flex-wrap gap-2">
+            <label class="block text-sm font-medium">Цвет</label>
+            <div class="flex flex-wrap justify-center gap-3 pt-2">
               <button
                 v-for="color in COLORS"
                 :key="color"
                 type="button"
-                class="size-10 rounded-full transition-transform active:scale-90"
+                class="size-12 rounded-full transition-transform active:scale-90"
                 :class="groupForm.color === color ? 'ring-2 ring-primary ring-offset-2' : ''"
                 :style="{ background: color }"
                 @click="groupForm.color = color"
