@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "installCommand": "npm install",
-  "buildCommand": "npm run build",
   "functions": {
     "api/**/*.ts": {
       "runtime": "@vercel/node@latest"
