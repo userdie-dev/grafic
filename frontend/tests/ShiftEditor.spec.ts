@@ -1,4 +1,5 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
@@ -40,8 +41,14 @@ const fakeEditor = (props: Record<string, unknown>) => ({
 })
 const mountEditor = async (props: Record<string, unknown> = {}) => {
   editor = fakeEditor(props)
-  w = mount(ShiftEditor, { global: { provide: { [DAY_EDITOR_KEY as symbol]: editor } }, attachTo: body() })
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  w = mount(ShiftEditor, {
+    global: { plugins: [[VueQueryPlugin, { queryClient }]], provide: { [DAY_EDITOR_KEY as symbol]: editor } },
+    attachTo: body(),
+  })
   await flushPromises()
+  // the drawer opens on the chart tab; the list is a separate mode
+  await click(btn('Список'))
   return w
 }
 const btns = () => [...body().querySelectorAll<HTMLButtonElement>('button')]
@@ -201,6 +208,7 @@ describe('adding shifts', () => {
   it('repeats a plain shift weekly for a year', async () => {
     await mountEditor()
     await openAdd()
+    await click(btn('Обычный'))
     await input(inputs().find((i) => i.placeholder === 'Заметка')!, 'Смена')
     await submit()
     const items = (saved()[0] as any)[0]

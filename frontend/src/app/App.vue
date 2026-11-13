@@ -5,37 +5,49 @@
       <RouterView />
     </main>
 
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="translate-y-2 opacity-0"
-      leave-active-class="transition duration-150 ease-in"
-      leave-to-class="translate-y-2 opacity-0"
-    >
-      <div
-        v-if="offline"
-        role="status"
-        class="pointer-events-none fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-50 flex w-52 items-center justify-center gap-2 rounded-[4px] bg-blue-600 px-3 py-2.5 text-center text-xs font-medium text-white shadow-lg"
+    <!-- all status notices share one corner and stack upwards -->
+    <div class="pointer-events-none fixed bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-50 flex flex-col items-end gap-2">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="translate-y-2 opacity-0"
+        leave-active-class="transition duration-150 ease-in"
+        leave-to-class="translate-y-2 opacity-0"
       >
-        <LoaderCircle class="size-4 shrink-0 animate-spin" aria-hidden="true" />
-        Подключение к серверу…
-      </div>
-    </Transition>
+        <div
+          v-if="offline"
+          role="status"
+          class="flex w-52 items-center justify-center gap-2 rounded-[4px] bg-blue-600 px-3 py-2.5 text-center text-xs font-medium text-white shadow-lg"
+        >
+          <LoaderCircle class="size-4 shrink-0 animate-spin" aria-hidden="true" />
+          Подключение к серверу…
+        </div>
+      </Transition>
 
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="translate-y-2 opacity-0"
-      leave-active-class="transition duration-150 ease-in"
-      leave-to-class="translate-y-2 opacity-0"
-    >
-      <div
-        v-if="update"
-        role="status"
-        class="pointer-events-none fixed bottom-[calc(9.5rem+env(safe-area-inset-bottom))] right-4 z-50 max-w-72 rounded-[4px] px-3 py-2.5 text-center text-xs font-medium text-white shadow-lg"
-        :class="update.kind === 'error' ? 'bg-destructive' : 'bg-blue-600'"
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="translate-y-2 opacity-0"
+        leave-active-class="transition duration-150 ease-in"
+        leave-to-class="translate-y-2 opacity-0"
       >
-        {{ update.text }}
-      </div>
-    </Transition>
+        <div
+          v-if="update"
+          role="status"
+          class="max-w-72 rounded-[4px] px-3 py-2.5 text-center text-xs font-medium text-white shadow-lg"
+          :class="update.kind === 'error' ? 'bg-destructive' : 'bg-blue-600'"
+        >
+          {{ update.text }}
+        </div>
+      </Transition>
+
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="translate-y-2 opacity-0"
+        leave-active-class="transition duration-150 ease-in"
+        leave-to-class="translate-y-2 opacity-0"
+      >
+        <AppToast v-if="appToast" :kind="appToast.kind" :text="appToast.text" />
+      </Transition>
+    </div>
 
     <AppNav />
     <OnboardingGuide />
@@ -47,7 +59,9 @@ import { LoaderCircle } from '@lucide/vue'
 import { computed } from 'vue'
 import { RouterView } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'
+import AppToast from '@/components/AppToast.vue'
 import OnboardingGuide from '@/components/OnboardingGuide.vue'
+import { useAppToast } from '@/composables/useAppToast'
 import { useConnection } from '@/composables/useConnection'
 import { useCommonOffNotify } from '@/composables/useCommonOffNotify'
 import { useUpdateStatus } from '@/composables/useUpdateStatus'
@@ -56,6 +70,7 @@ import { useSchedule, useScheduleSync } from '@/composables/useSchedule'
 const s = useSchedule()
 const offline = computed(() => useConnection().value === 'offline')
 const update = useUpdateStatus()
+const appToast = useAppToast()
 useScheduleSync()
 useCommonOffNotify()
 </script>

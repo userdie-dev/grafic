@@ -23,6 +23,7 @@ import AppNav from '@/components/AppNav.vue'
 import App from '@/app/App.vue'
 import SettingsPage from '@/pages/SettingsPage.vue'
 import SharePage from '@/pages/SharePage.vue'
+import { useScheduleStore } from '@/stores/schedule'
 
 beforeEach(() => {
   setActivePinia(createPinia())
@@ -95,6 +96,21 @@ describe('SettingsPage', () => {
     expect(after[target]).toBe(true)
     expect(after.filter(Boolean)).toHaveLength(1)
     expect(localStorage.getItem('theme')).toBeTruthy()
+  })
+
+  it('toggles the calendar overlays', async () => {
+    const store = useScheduleStore()
+    const w = mount(SettingsPage)
+    const switches = w.findAll('button[role="switch"]')
+    expect(switches.map((s) => s.attributes('aria-checked'))).toEqual(['false', 'true', 'true'])
+
+    await switches[1]!.trigger('click')
+    expect(store.state.showCommonOff).toBe(false)
+    await switches[2]!.trigger('click')
+    expect(store.state.showFreeHours).toBe(false)
+
+    await switches[1]!.trigger('click')
+    expect(store.state.showCommonOff).toBe(true)
   })
 })
 

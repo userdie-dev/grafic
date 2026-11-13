@@ -42,6 +42,7 @@
 import { computed, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 import { RiCheckLine, RiFileCopyLine, RiRefreshLine, RiUserAddLine } from '@remixicon/vue'
+import { showAppToast } from '@/composables/useAppToast'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -82,6 +83,12 @@ async function add() {
   if (await s.addFriend(code.value, label.value)) {
     code.value = ''
     label.value = ''
+    return
   }
+  const reason = s.error || ''
+  showAppToast(
+    reason.includes('yourself') ? 'Это ваш собственный код' : 'Не удалось добавить друга. Проверьте код',
+    'error',
+  )
 }
 </script>

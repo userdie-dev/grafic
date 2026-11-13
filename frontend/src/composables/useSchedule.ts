@@ -5,8 +5,10 @@ import { api, eventsUrl } from '@/lib/api'
 import type { Shift, ShiftInput } from '@/lib/dto'
 import { toLocalShift } from '@/lib/tz'
 import { addDays, parseISO } from 'date-fns'
-import { gridRange, iso } from '@/lib/dates'
+import { gridRange, iso, monthGrid } from '@/lib/dates'
 import { freeDays } from '@/lib/commonOff'
+import { commonFreeWindows } from '@/lib/freeHours'
+import { holidayName } from '@/lib/holidays'
 import { MOCK_FRIENDS, USE_MOCK_FRIENDS, mockShifts } from '@/lib/mock'
 import { useScheduleStore } from '@/stores/schedule'
 import { setConnection } from '@/composables/useConnection'
@@ -55,7 +57,7 @@ export function useSchedule() {
     : []
 
   const people = computed(() => [
-    { id: ME, name: 'Я', color: COLORS[0]!, subId: '' },
+    { id: ME, name: 'Я', color: store.state.colors[ME] ?? COLORS[0]!, subId: '' },
     ...subs.value.map((s, i) => ({
       id: s.ownerId,
       name: store.state.labels[s.ownerId] ?? 'Друг',
@@ -94,8 +96,31 @@ export function useSchedule() {
     return freeDays(Object.keys(byDate.value), range.value.from, range.value.to)
   })
 
-  const invalidateMine = () => qc.invalidateQueries({ queryKey: ['shifts', ME] })
+  /** days of the shown grid with at least one shared free hour for every visible person */
+  const commonFreeDays = computed(() => {
+    const visible = people.value.filter((p) => !store.state.hidden.includes(p.id))
+    const loaded = people.value.every((p, i) => p.id === ME || p.id.startsWith('mock-') || friendQueries.value[i - 1]?.data)
+    if (!loaded || !mineQuery.data.value) return []
+    // an intersection needs at least two schedules
+    if (visible.length < 2) return []
+    // days without any shifts are already fully free (commonOff), so only busy dates are checked
+    return Object.keys(byDate.value).filter(
+      (date) => commonFreeWindows(byDate.value[date]!.map((entry) => entry.shift)).length > 0,
+    )
+  })
 
+  /** public holidays of the shown grid, by local calendar day (see holidays.ts) */
+  const holidays = computed(() => {
+    const map: Record<string, string> = {}
+    for (const day of monthGrid(store.month)) {
+      const date = iso(day)
+      const name = holidayName(date)
+      if (name) map[date] = name
+    }
+    return map
+  })
+
+  const invalidateMine = () => qc.invalidateQueries({ queryKey: ['shifts', ME] })
   const save = useMutation({
     mutationFn: async ({ items, removeIds }: { items: ShiftInput[]; removeIds: string[] }) => {
       await Promise.all(removeIds.map((id) => api.deleteShift(id)))
@@ -135,6 +160,10 @@ export function useSchedule() {
     people,
     byDate,
     commonOff,
+    commonFreeDays,
+    holidays,
+    showCommonOff: computed(() => store.state.showCommonOff),
+    showFreeHours: computed(() => store.state.showFreeHours),
     myShifts,
     error,
     shiftMonth: store.shiftMonth,

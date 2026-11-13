@@ -1,6 +1,7 @@
 export type Times = [string, string]
 
 /**
+ * once    – a single shift on the selected day
  * weekly  – a single shift, optionally repeated every week
  * cycle   – `work` working days, then `off` days off, repeating from the chosen day
  * weekdays – fixed days of the week (0 = Sunday … 6 = Saturday)
@@ -9,13 +10,14 @@ export interface Preset {
   id: string
   label: string
   hint: string
-  rule: { type: 'weekly' } | { type: 'cycle'; work: number; off: number } | { type: 'weekdays'; days: number[] }
+  rule: { type: 'once' } | { type: 'weekly' } | { type: 'cycle'; work: number; off: number } | { type: 'weekdays'; days: number[] }
   day: Times
   night: Times
   custom?: boolean
 }
 
 export const BUILTIN_PRESETS: Preset[] = [
+  { id: 'once', label: 'Один раз', hint: 'Только на выбранный день', rule: { type: 'once' }, day: ['09:00', '18:00'], night: ['20:00', '08:00'] },
   { id: 'weekly', label: 'Обычный', hint: '', rule: { type: 'weekly' }, day: ['09:00', '18:00'], night: ['20:00', '08:00'] },
   {
     id: '5/2',
@@ -47,6 +49,7 @@ export function describe(p: Preset): string {
 /** Whether the preset puts a shift on the day `offset` days after the first one (`dow` = that day's weekday). */
 export function works(p: Preset, offset: number, dow: number): boolean {
   const r = p.rule
+  if (r.type === 'once') return offset === 0
   if (r.type === 'cycle') return offset % (r.work + r.off) < r.work
   if (r.type === 'weekdays') return r.days.includes(dow)
   return offset === 0

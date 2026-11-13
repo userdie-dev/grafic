@@ -1,5 +1,5 @@
 import { computed, inject, provide, ref, type InjectionKey } from 'vue'
-import { useSchedule } from '@/composables/useSchedule'
+import { ME, useSchedule } from '@/composables/useSchedule'
 
 /** State and actions of the friend editor drawer, shared between the page and the drawer. */
 function createFriendEditor() {
@@ -19,7 +19,8 @@ function createFriendEditor() {
     close: () => (friendId.value = null),
     save(name: string, color: string) {
       if (!friend.value) return
-      s.rename(friend.value.id, name)
+      // my own name is fixed, only the colour is configurable
+      if (friend.value.id !== ME) s.rename(friend.value.id, name)
       s.setColor(friend.value.id, color)
     },
     toggle: () => friend.value && s.toggle(friend.value.id),

@@ -17,6 +17,10 @@ interface State {
   colors: Record<string, string>
   /** ids of people hidden in the calendar */
   hidden: string[]
+  /** tint days when everyone visible is off */
+  showCommonOff: boolean
+  /** tint days when everyone visible shares at least one free hour */
+  showFreeHours: boolean
   /** remind the evening before a day off shared by me and all my friends */
   notifyCommonOff: boolean
 }
@@ -28,7 +32,7 @@ interface State {
 export const useScheduleStore = defineStore('schedule', () => {
   const state = useLocalStorage<State>(
     'grafic.store',
-    { device: null, month: iso(new Date()), labels: {}, colors: {}, hidden: [], notifyCommonOff: false },
+    { device: null, month: iso(new Date()), labels: {}, colors: {}, hidden: [], showCommonOff: true, showFreeHours: true, notifyCommonOff: false },
     { mergeDefaults: true },
   )
 

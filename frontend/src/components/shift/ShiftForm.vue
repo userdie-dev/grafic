@@ -84,6 +84,7 @@ const end = ref(props.editing?.end ?? preset.value.day[1])
 const note = ref(props.editing?.note ?? '')
 const problem = ref('')
 
+const isOnce = computed(() => preset.value.rule.type === 'once')
 const isWeekly = computed(() => preset.value.rule.type === 'weekly')
 const hint = computed(() => describe(preset.value))
 
@@ -112,15 +113,25 @@ function buildItems(): ShiftInput[] | null {
   const items: ShiftInput[] = []
   const first = parseISO(editor.date.value)
   const add = (d: Date) => items.push({ date: iso(d), start: start.value, end: end.value, note: note.value || null })
-  if (props.editing || isWeekly.value) {
+  
+  // Single shift: editing or 'once' preset
+  if (props.editing || isOnce.value) {
+    add(first)
+    return items
+  }
+  
+  // Weekly repeating shift
+  if (isWeekly.value) {
     let d = first
-    const last = props.editing ? d : addDays(first, DEFAULT_FILL_DAYS - 1)
+    const last = addDays(first, DEFAULT_FILL_DAYS - 1)
     while (d <= last && items.length < 366) {
       add(d)
       d = addWeeks(d, 1)
     }
     return items
   }
+  
+  // Cycle or weekdays preset
   const last = addDays(first, DEFAULT_FILL_DAYS - 1)
   for (let d = first, i = 0; d <= last; d = addDays(d, 1), i++) {
     if (items.length >= 366) return null

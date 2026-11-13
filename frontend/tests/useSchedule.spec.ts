@@ -152,6 +152,56 @@ describe('useSchedule', () => {
     const { result } = setup(useSchedule)
     await flushPromises()
     expect(result.commonOff).toEqual([])
+    expect(result.commonFreeDays).toEqual([])
+  })
+
+  it('exposes the holidays of the shown grid and the calendar switches', async () => {
+    withDevice()
+    const { result } = setup(useSchedule)
+    await flushPromises()
+    expect(result.holidays['2030-01-01']).toBe('Новый год')
+    expect(result.holidays['2030-01-07']).toBe('Рождество Христово')
+    expect(result.holidays['2030-01-09']).toBeUndefined()
+    expect(result.showCommonOff).toBe(true)
+    expect(result.showFreeHours).toBe(true)
+
+    const store = useScheduleStore()
+    store.state.showCommonOff = false
+    store.state.showFreeHours = false
+    expect(result.showCommonOff).toBe(false)
+    expect(result.showFreeHours).toBe(false)
+  })
+
+  it('finds days with a shared free window', async () => {    withDevice()
+    vi.mocked(api.subscriptions).mockResolvedValue([{ id: 's1', ownerId: 'o1' }])
+    vi.mocked(api.myShifts).mockResolvedValue([shift('m1', '2030-01-08', '12:00')])
+    vi.mocked(api.friendShifts).mockResolvedValue([shift('f1', '2030-01-09', '08:00')])
+    const { result } = setup(useSchedule)
+    await flushPromises()
+    result.people.filter((p) => p.id.startsWith('mock-')).forEach((p) => result.toggle(p.id))
+    await flushPromises()
+
+    // 12–18 and 8–18 still leave the morning and the evening free
+    expect(result.commonFreeDays).toContain('2030-01-08')
+    expect(result.commonFreeDays).toContain('2030-01-09')
+
+    // a single visible person has nothing to intersect with
+    result.toggle('o1')
+    await flushPromises()
+    expect(result.commonFreeDays).toEqual([])
+  })
+
+  it('excludes days that are busy around the clock', async () => {
+    withDevice()
+    vi.mocked(api.subscriptions).mockResolvedValue([{ id: 's1', ownerId: 'o1' }])
+    vi.mocked(api.myShifts).mockResolvedValue([{ id: 'm1', date: '2030-01-08', start: '12:00', end: '12:00', note: null }])
+    const { result } = setup(useSchedule)
+    await flushPromises()
+    result.people.filter((p) => p.id.startsWith('mock-')).forEach((p) => result.toggle(p.id))
+    await flushPromises()
+
+    expect(result.byDate['2030-01-08']).toBeDefined()
+    expect(result.commonFreeDays).not.toContain('2030-01-08')
   })
 
   it('lets a local colour override the default one', async () => {
@@ -162,6 +212,15 @@ describe('useSchedule', () => {
     expect(result.people[1]!.color).toBe(COLORS[1])
     result.setColor('o1', '#abcdef')
     expect(result.people[1]!.color).toBe('#abcdef')
+  })
+
+  it('lets me pick my own colour', async () => {
+    withDevice()
+    const { result } = setup(useSchedule)
+    await flushPromises()
+    expect(result.people[0]!.color).toBe(COLORS[0])
+    result.setColor(ME, '#abcdef')
+    expect(result.people[0]!.color).toBe('#abcdef')
   })
 
   it('uses a local label for a mock friend', async () => {

@@ -23,6 +23,7 @@ import CalendarPage from '@/pages/CalendarPage.vue'
 import FriendEditor from '@/components/FriendEditor.vue'
 import { useDayEditor } from '@/composables/useDayEditor'
 import { FRIEND_EDITOR_KEY, useFriendEditor } from '@/composables/useFriendEditor'
+import { hideAppToast, useAppToast } from '@/composables/useAppToast'
 import { useScheduleStore } from '@/stores/schedule'
 
 const entry = (who: string, date: string, start = '09:00') => ({
@@ -35,11 +36,17 @@ const entry = (who: string, date: string, start = '09:00') => ({
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
+  hideAppToast()
   h.s = reactive({
     shareCode: 'ABC234',
     month: new Date(2030, 0, 15),
     byDate: {} as Record<string, unknown[]>,
     commonOff: [] as string[],
+    commonFreeDays: [] as string[],
+    holidays: {} as Record<string, string>,
+    showCommonOff: true,
+    showFreeHours: true,
+    error: '',
     hidden: [] as string[],
     myShifts: [] as unknown[],
     people: [
@@ -128,10 +135,17 @@ describe('ShareView', () => {
     expect((label!.element as HTMLInputElement).value).toBe('')
 
     h.s.addFriend.mockResolvedValue(false)
+    const appToast = useAppToast()
     await code!.setValue('WXYZ')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect((code!.element as HTMLInputElement).value).toBe('WXYZ')
+    expect(appToast.value).toEqual({ kind: 'error', text: 'Не удалось добавить друга. Проверьте код' })
+
+    h.s.error = 'Cannot subscribe to yourself'
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(appToast.value).toEqual({ kind: 'error', text: 'Это ваш собственный код' })
   })
 })
 
@@ -151,6 +165,29 @@ describe('MonthCalendar', () => {
     await flushPromises()
     expect(cell('2030-01-12').className).not.toContain('bg-emerald-500/20')
     bare.unmount()
+  })
+
+  it('tints days with a shared free window', async () => {
+    const w = mount(MonthCalendar, {
+      props: { month: new Date(2030, 0, 15), entries: {}, freeHourDays: ['2030-01-14'] },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    expect(cell('2030-01-14').className).toContain('bg-sky-500/15')
+    expect(cell('2030-01-13').className).toContain('bg-transparent')
+    w.unmount()
+  })
+
+  it('marks holidays by their local date', async () => {
+    const w = mount(MonthCalendar, {
+      props: { month: new Date(2030, 0, 15), entries: {}, holidays: { '2030-01-07': 'Рождество Христово' } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    expect(cell('2030-01-07').getAttribute('title')).toBe('Рождество Христово')
+    expect(cell('2030-01-07').querySelector('[class*="bg-red-500/15"]')).toBeTruthy()
+    expect(cell('2030-01-08').getAttribute('title')).toBeNull()
+    w.unmount()
   })
 
   it('renders a fixed 6-week Monday-first grid with entries', async () => {
@@ -253,7 +290,7 @@ describe('MonthCalendar', () => {
 
 describe('CalendarPage', () => {
   const stubs = {
-    MonthCalendar: { props: ['month', 'entries', 'freeDays'], emits: ['select'], template: '<button id="cal" @click="$emit(\'select\', \'2030-01-10\')" />' },
+    MonthCalendar: { props: ['month', 'entries', 'freeDays', 'freeHourDays', 'holidays'], emits: ['select'], template: '<button id="cal" @click="$emit(\'select\', \'2030-01-10\')" />' },
     FriendEditor: {
       setup: () => ({ e: useFriendEditor() }),
       template: '<div id="fe">{{ e.friend.value.id }}|{{ e.hidden.value }}|{{ e.removable.value }}<i id="fsave" @click="e.save(\'Анна\', \'#abc\')" /><i id="ftoggle" @click="e.toggle()" /><i id="fremove" @click="e.remove()" /><i id="fclose" @click="e.close()" /></div>',
@@ -267,9 +304,25 @@ describe('CalendarPage', () => {
   it('shows the legend only when there are common days off', async () => {
     const w = mount(CalendarPage, { global: { stubs } })
     expect(w.text()).not.toContain('Общий выходной')
+    expect(w.text()).not.toContain('Есть свободные часы')
+    expect(w.text()).not.toContain('Праздничный день')
     h.s.commonOff = ['2030-01-12']
+    h.s.commonFreeDays = ['2030-01-14']
+    h.s.holidays = { '2030-01-07': 'Рождество Христово' }
     await w.vm.$nextTick()
     expect(w.text()).toContain('Общий выходной')
+    expect(w.text()).toContain('Есть свободные часы')
+    expect(w.text()).toContain('Праздничный день')
+  })
+
+  it('hides the common tints when their switches are off', async () => {
+    h.s.commonOff = ['2030-01-12']
+    h.s.commonFreeDays = ['2030-01-14']
+    h.s.showCommonOff = false
+    h.s.showFreeHours = false
+    const w = mount(CalendarPage, { global: { stubs } })
+    expect(w.text()).not.toContain('Общий выходной')
+    expect(w.text()).not.toContain('Есть свободные часы')
   })
 
   it('opens the friend editor on a friend tap and wires its events', async () => {
@@ -297,7 +350,7 @@ describe('CalendarPage', () => {
     expect(w.get('#fe').text()).toContain('mock-x|false|false')
   })
 
-  it('lists people, toggles them and shows struck-out hidden ones', async () => {
+  it('lists people, shows struck-out hidden ones and opens my settings', async () => {
     h.s.hidden = ['o1']
     const w = mount(CalendarPage, { global: { stubs } })
     const buttons = w.findAll('section > div button')
@@ -305,7 +358,12 @@ describe('CalendarPage', () => {
     expect(buttons[1]!.classes()).toContain('line-through')
     expect(buttons[0]!.classes()).not.toContain('line-through')
     await buttons[0]!.trigger('click')
-    expect(h.s.toggle).toHaveBeenCalledWith('me')
+    expect(h.s.toggle).not.toHaveBeenCalled()
+    expect(w.get('#fe').text()).toContain('me|false|false')
+    await w.get('#fsave').trigger('click')
+    // my name is fixed: only the colour is saved
+    expect(h.s.rename).not.toHaveBeenCalled()
+    expect(h.s.setColor).toHaveBeenCalledWith('me', '#abc')
   })
 
   it('opens the editor for a day with my shifts and friends only, and wires events', async () => {
@@ -345,8 +403,8 @@ describe('FriendEditor', () => {
   const btn = (text: string) => [...body().querySelectorAll('button')].find((b) => b.textContent!.includes(text))!
   const input = () => body().querySelector<HTMLInputElement>('input[placeholder="Имя"]')!
   let w: ReturnType<typeof mount>
-  const fakeEditor = (hidden: boolean, removable: boolean) => ({
-    friend: ref(person),
+  const fakeEditor = (hidden: boolean, removable: boolean, p = person) => ({
+    friend: ref(p),
     hidden: ref(hidden),
     removable: ref(removable),
     open: vi.fn(),
@@ -356,12 +414,12 @@ describe('FriendEditor', () => {
     remove: vi.fn(),
   })
   let editor: ReturnType<typeof fakeEditor>
-  const mountEditor = async (hidden: boolean, removable: boolean) => {
-    editor = fakeEditor(hidden, removable)
+  const mountEditor = async (hidden: boolean, removable: boolean, p = person) => {
+    editor = fakeEditor(hidden, removable, p)
     w = mount(FriendEditor, { global: { provide: { [FRIEND_EDITOR_KEY as symbol]: editor } }, attachTo: body() })
     await flushPromises()
   }
-  const open = (hidden = false) => mountEditor(hidden, true)
+  const open = (hidden = false, p = person) => mountEditor(hidden, true, p)
   afterEach(() => {
     w?.unmount()
     body().innerHTML = ''
@@ -382,6 +440,58 @@ describe('FriendEditor', () => {
     expect(editor.close).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(250)
     expect(editor.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('offers a palette as the last colour option in a popover', async () => {
+    await open()
+    const radios = [...body().querySelectorAll<HTMLElement>('[role="radio"]')]
+    expect(radios.at(-1)!.getAttribute('aria-label')).toBe('Свой цвет')
+    expect(radios.at(-1)!.getAttribute('aria-checked')).toBe('false')
+    expect(body().querySelector('[data-slot="color-picker"]')).toBeNull()
+
+    radios.at(-1)!.click()
+    await nextTick()
+    await flushPromises()
+    expect(radios.at(-1)!.getAttribute('aria-checked')).toBe('true')
+
+    const picker = body().querySelector('[data-slot="color-picker"]')!
+    const hex = picker.querySelector<HTMLInputElement>('input[aria-label="Цвет в HEX"]')!
+    hex.value = '#123456'
+    hex.dispatchEvent(new Event('input', { bubbles: true }))
+    hex.dispatchEvent(new Event('blur', { bubbles: true }))
+    await nextTick()
+
+    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(editor.save).toHaveBeenCalledWith('Аня', '#123456')
+  })
+
+  it('closes the popover when a preset colour is picked', async () => {
+    await open()
+    const radios = [...body().querySelectorAll<HTMLElement>('[role="radio"]')]
+    radios.at(-1)!.click()
+    await nextTick()
+    await flushPromises()
+    expect(body().querySelector('[data-slot="color-picker"]')).toBeTruthy()
+
+    radios[1]!.click()
+    await nextTick()
+    await flushPromises()
+    expect(body().querySelector('[data-slot="color-picker"]')).toBeNull()
+    expect(radios.at(-1)!.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('configures me without a name field', async () => {
+    await mountEditor(false, false, { id: 'me', name: 'Я', color: '#111' })
+    expect(body().querySelector('input[placeholder="Имя"]')).toBeNull()
+    expect(body().textContent).toContain('Я')
+    expect(body().querySelectorAll('[role="radio"]').length).toBe(3) // two colours + palette
+    expect(btn('Удалить')).toBeUndefined()
+
+    body().querySelectorAll<HTMLElement>('[role="radio"]')[1]!.click()
+    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(editor.save).toHaveBeenCalledWith('Я', '#222')
   })
 
   it('keeps the old name when it is blank', async () => {

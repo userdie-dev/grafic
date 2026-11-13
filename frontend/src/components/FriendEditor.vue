@@ -1,11 +1,14 @@
 <template>
   <Drawer :open="open" @update:open="onOpenChange">
-    <DrawerContent class="pb-[max(1rem,env(safe-area-inset-bottom))]">
-      <DrawerTitle class="px-1 pb-3 pt-2 text-lg">Друг</DrawerTitle>
-      <DrawerDescription class="sr-only">Имя, цвет и видимость друга в календаре</DrawerDescription>
+    <!-- opening must not focus the name field: the drawer is informational until tapped -->
+    <DrawerContent :initial-focus="false" class="pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <DrawerTitle class="px-1 pb-3 pt-2 text-lg">{{ isMe ? 'Я' : 'Друг' }}</DrawerTitle>
+      <DrawerDescription class="sr-only">{{
+        isMe ? 'Цвет и видимость в календаре' : 'Имя, цвет и видимость друга в календаре'
+      }}</DrawerDescription>
 
       <form class="space-y-4 px-1" @submit.prevent="save">
-        <Input v-model="name" maxlength="30" placeholder="Имя" aria-label="Имя" class="h-10" />
+        <Input v-if="!isMe" v-model="name" maxlength="30" placeholder="Имя" aria-label="Имя" class="h-10" />
 
         <div class="flex flex-wrap gap-2.5" role="radiogroup" aria-label="Цвет">
           <button
@@ -13,13 +16,16 @@
             :key="c"
             type="button"
             role="radio"
-            :aria-checked="color === c"
+            :aria-checked="!pickerOpen && color === c"
             :aria-label="c"
             class="size-8 rounded-full ring-offset-2 ring-offset-background transition active:scale-90"
-            :class="color === c ? 'ring-2 ring-foreground' : ''"
+            :class="!pickerOpen && color === c ? 'ring-2 ring-foreground' : ''"
             :style="{ background: c }"
-            @click="color = c"
+            @click="pickPreset(c)"
           />
+
+          <!-- the palette is the last option: an arbitrary colour in a popover -->
+          <ColorPicker v-model="color" v-model:open="pickerOpen" :checked="pickerOpen" @update:model-value="onCustom" />
         </div>
 
         <button
@@ -50,22 +56,45 @@
 import { ref } from 'vue'
 import { RiDeleteBinLine } from '@remixicon/vue'
 import { Button } from '@/components/ui/button'
+import { ColorPicker } from '@/components/ui/color-picker'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
+import { showAppToast } from '@/composables/useAppToast'
 import { useDrawerClose } from '@/composables/useDrawerClose'
 import { useFriendEditor } from '@/composables/useFriendEditor'
-import { COLORS } from '@/composables/useSchedule'
+import { COLORS, ME } from '@/composables/useSchedule'
 
 const editor = useFriendEditor()
 const person = editor.friend.value!
 
 const { open, close, onOpenChange } = useDrawerClose(editor.close)
 
+const isMe = person.id === ME
 const name = ref(person.name)
 const color = ref(person.color)
+const pickerOpen = ref(false)
+
+function pickPreset(c: string) {
+  color.value = c
+  pickerOpen.value = false
+}
+
+function onCustom() {
+  // opening the picker marks it as custom, but changing the colour there keeps it selected
+  pickerOpen.value = true
+}
 
 function save() {
+  if (isMe) {
+    editor.save(person.name, color.value)
+    close()
+    return
+  }
+  const isNewFriend = !person.subId || person.name === 'Друг'
   editor.save(name.value.trim() || person.name, color.value)
+  if (isNewFriend) {
+    showAppToast(`${name.value.trim() || person.name} добавлен`, 'success')
+  }
   close()
 }
 

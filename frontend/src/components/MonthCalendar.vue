@@ -47,10 +47,14 @@
             <CalendarCellTrigger
               :day="date"
               :month="m.value"
-              :class="isFree(date) ? 'bg-emerald-500/20' : 'bg-transparent'"
+              :title="holiday(date)"
+              :class="cellBackground(date)"
               class="group/day flex h-auto min-h-[4.75rem] w-full flex-col items-center justify-start gap-1.5 rounded-2xl px-0.5 pb-1.5 pt-1.5 font-normal transition hover:bg-transparent active:scale-95 data-[outside-view]:opacity-30 data-[selected]:bg-muted data-[selected]:hover:bg-muted data-[selected]:focus:bg-muted data-[selected]:text-foreground [&[data-today]:not([data-selected])]:bg-transparent [&[data-today]:not([data-selected])]:text-foreground sm:min-h-28 sm:items-stretch sm:gap-1 sm:px-1.5"
             >
-              <span class="flex size-7 items-center justify-center rounded-full text-[15px] font-medium group-data-[today]/day:bg-primary group-data-[today]/day:font-semibold group-data-[today]/day:text-primary-foreground sm:self-start">{{ date.day }}</span>
+              <span
+                class="flex size-7 items-center justify-center rounded-full text-[15px] font-medium group-data-[today]/day:bg-primary group-data-[today]/day:font-semibold group-data-[today]/day:text-primary-foreground sm:self-start"
+                :class="holiday(date) ? 'bg-red-500/15 text-red-600 dark:text-red-400' : ''"
+              >{{ date.day }}</span>
               <DayEntries :entries="dayEntries(date)" />
             </CalendarCellTrigger>
           </CalendarCell>
@@ -88,6 +92,10 @@ const props = defineProps<{
   entries: Record<string, Entry[]>
   /** days when everyone visible is off */
   freeDays?: string[]
+  /** days with a shared free window for everyone, even though someone works */
+  freeHourDays?: string[]
+  /** holiday names by ISO date */
+  holidays?: Record<string, string>
 }>()
 const emit = defineEmits<{ select: [date: string] }>()
 const s = useScheduleStore()
@@ -96,6 +104,10 @@ const s = useScheduleStore()
 const monthsFromToday = computed(() => differenceInCalendarMonths(props.month, new Date()))
 
 const isFree = (d: DateValue) => !!props.freeDays?.includes(d.toString())
+const hasFreeHours = (d: DateValue) => !!props.freeHourDays?.includes(d.toString())
+const holiday = (d: DateValue) => props.holidays?.[d.toString()]
+const cellBackground = (d: DateValue) =>
+  isFree(d) ? 'bg-emerald-500/20' : hasFreeHours(d) ? 'bg-sky-500/15' : 'bg-transparent'
 const dayEntries = (d: DateValue) => props.entries[d.toString()] ?? []
 
 const toCal =(d: Date) => new CalendarDate(d.getFullYear(), d.getMonth() + 1, 1)
