@@ -71,6 +71,9 @@ const rows = await this.databaseService.getData();
 
 ## API Endpoints
 
+`GET /` — стартовая HTML-страница бэкенда со списком маршрутов и инструкцией
+по авторизации. Доступна без токена устройства.
+
 ### Устройства
 - `POST /devices` - регистрация нового устройства
 - `POST /me/share-code/regenerate` - обновление кода для шаринга

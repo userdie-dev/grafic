@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import pg from 'pg';
+import { AppController } from './app.controller.js';
 import { DatabaseModule } from './database/database.module.js';
 import { DevicesModule } from './devices/devices.module.js';
 import { Shift } from './entities/shift.entity.js';
@@ -61,6 +62,7 @@ const getDatabaseConfig = () => {
     ShiftsModule,
     SubscriptionsModule,
   ],
+  controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
