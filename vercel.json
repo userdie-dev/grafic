@@ -11,6 +11,10 @@
       "dest": "backend/api/health.ts"
     },
     {
+      "src": "/health-copy",
+      "dest": "backend/api/health-copy.ts"
+    },
+    {
       "src": "/neon",
       "dest": "backend/api/neon.ts"
     }
