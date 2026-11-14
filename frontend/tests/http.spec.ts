@@ -65,6 +65,15 @@ describe('axios config', () => {
   })
 
   describe('error mapping', () => {
+    it('limits request duration and explains a timed out request', async () => {
+      const { http, setRespond } = await load()
+      expect(http.defaults.timeout).toBe(15_000)
+      setRespond(async (config) => {
+        throw new AxiosError('timeout', 'ECONNABORTED', config)
+      })
+      await expect(http.put('/me/shifts')).rejects.toThrow('Сервер не ответил за 15 секунд')
+    })
+
     const fail = (data: unknown, status = 400) => async (c: InternalAxiosRequestConfig) => {
       throw new AxiosError('Request failed', 'ERR_BAD_REQUEST', c, {}, { data, status, statusText: '', headers: {}, config: c })
     }

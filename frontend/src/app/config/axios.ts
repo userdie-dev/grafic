@@ -19,7 +19,7 @@ export const setToken = (t: string) => (token = t)
 let onUnauthorized: (() => Promise<void>) | undefined
 export const setUnauthorizedHandler = (fn: () => Promise<void>) => (onUnauthorized = fn)
 
-export const http = axios.create({ baseURL: API_URL })
+export const http = axios.create({ baseURL: API_URL, timeout: 15_000 })
 http.interceptors.request.use((config) => {
   if (!isApiUrlValid) throw new Error('Некорректный адрес сервера. Проверьте настройки подключения.')
   if (token) config.headers.Authorization = `Bearer ${token}`
@@ -43,5 +43,8 @@ http.interceptors.response.use((response) => {
     }
   }
   const m = axios.isAxiosError(e) ? e.response?.data?.message : undefined
+  if (axios.isAxiosError(e) && (e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT')) {
+    return Promise.reject(new Error('Сервер не ответил за 15 секунд. Проверьте подключение и попробуйте ещё раз.'))
+  }
   return Promise.reject(new Error(Array.isArray(m) ? m.join(', ') : (m ?? e.message)))
 })

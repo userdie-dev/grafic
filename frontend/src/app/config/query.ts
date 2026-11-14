@@ -5,7 +5,12 @@ const WEEK = 7 * 24 * 60 * 60 * 1000
 
 /** Query cache mirrored to localStorage, so the last known schedule is shown without internet. */
 export function createQueryClient(): QueryClient {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: 1, gcTime: WEEK } } })
+  // WebViews can report offline while the API is reachable. Let HTTP determine
+  // connectivity instead of silently pausing requests until an online event.
+  const client = new QueryClient({ defaultOptions: {
+    queries: { retry: 1, gcTime: WEEK, networkMode: 'always' },
+    mutations: { networkMode: 'always' },
+  } })
 
   try {
     const saved = localStorage.getItem(KEY)

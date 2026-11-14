@@ -1,5 +1,6 @@
 import { flushPromises } from '@vue/test-utils'
 import { expect, it, vi } from 'vitest'
+import { onlineManager } from '@tanstack/vue-query'
 
 vi.mock('@/lib/api', () => ({
   registerDevice: vi.fn().mockResolvedValue({ userId: 'u', token: 't', shareCode: 'ABC234' }),
@@ -34,4 +35,23 @@ it('persists successful queries and restores them on startup', async () => {
   vi.advanceTimersByTime(600)
   const b = createQueryClient()
   expect(b.getQueryData(['shifts', 'me'])).toEqual([{ id: '1' }])
+})
+
+it('sends saves and refreshes even when the WebView reports offline', async () => {
+  const { createQueryClient } = await import('@/app/config/query')
+  const client = createQueryClient()
+  onlineManager.setOnline(false)
+  try {
+    const mutationFn = vi.fn().mockResolvedValue('saved')
+    const mutation = client.getMutationCache().build(client, { mutationFn })
+    const saving = mutation.execute(undefined)
+    await flushPromises()
+    expect(mutationFn).toHaveBeenCalledOnce()
+    expect(mutation.state.isPaused).toBe(false)
+    await expect(saving).resolves.toBe('saved')
+    await expect(client.fetchQuery({ queryKey: ['offline-refresh'], queryFn: async () => 'fresh' })).resolves.toBe('fresh')
+  } finally {
+    onlineManager.setOnline(true)
+    client.clear()
+  }
 })
