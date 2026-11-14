@@ -7,6 +7,19 @@ NestJS API для приложения управления сменами.
 - Node.js 24.x
 - npm или pnpm
 
+## Деплой на Vercel
+
+Ядро NestJS (`@nestjs/common`, `@nestjs/core`, `@nestjs/platform-express`)
+и `@nestjs/testing` должны оставаться на совместимой ветке 11.x.
+`@nestjs/throttler` 6.7.1 использует CommonJS `require()` для загрузки
+`@nestjs/common`. С ESM-версией NestJS 12 это вызывает `ERR_REQUIRE_ESM`
+в среде Vercel. Формат ESM самого приложения менять не требуется.
+
+После изменения зависимостей коммитьте `package.json` вместе с
+`package-lock.json`. В Vercel используйте Node.js 24.x и установку через
+`npm ci`. При повторном деплое отключите использование Build Cache,
+чтобы исключить старые зависимости.
+
 ## Установка
 
 ```bash
