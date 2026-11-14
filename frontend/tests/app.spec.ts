@@ -24,10 +24,14 @@ import App from '@/app/App.vue'
 import SettingsPage from '@/pages/SettingsPage/index.vue'
 import SharePage from '@/pages/SharePage/index.vue'
 import { useScheduleStore } from '@/stores/schedule'
+import { hideAppToast, useAppToast } from '@/composables/useAppToast'
+import { setConnection } from '@/composables/useConnection'
 
 beforeEach(() => {
   setActivePinia(createPinia())
   sched.error = ''
+  hideAppToast()
+  setConnection('online')
 })
 
 const makeRouter = () =>
@@ -55,7 +59,7 @@ describe('AppNav', () => {
 })
 
 describe('App', () => {
-  it('shows the router view and an error banner when there is an error', async () => {
+  it('shows query errors as a toast instead of a banner, including while offline', async () => {
     const router = makeRouter()
     router.push('/')
     await router.isReady()
@@ -66,11 +70,31 @@ describe('App', () => {
     expect(w.find('p.text-destructive').exists()).toBe(false)
 
     // a failing subscription query surfaces its message
+    setConnection('offline')
     const { api } = await import('@/lib/api')
     vi.mocked(api.subscriptions).mockRejectedValueOnce(new Error('Server down'))
     await qc.invalidateQueries({ queryKey: ['subs'] })
     await flushPromises()
-    expect(w.find('p.text-destructive').text()).toBe('Server down')
+    expect(w.find('p.text-destructive').exists()).toBe(false)
+    expect(useAppToast().value).toEqual({ text: 'Server down', kind: 'error' })
+    expect(w.get('[role="status"].bg-destructive').text()).toBe('Server down')
+    w.unmount()
+    qc.clear()
+  })
+
+  it('shows an invalid API address as a toast when initial registration fails', async () => {
+    const { registerDevice } = await import('@/lib/api')
+    vi.mocked(registerDevice).mockRejectedValueOnce(new Error('Некорректный адрес сервера. Проверьте настройки подключения.'))
+    const router = makeRouter()
+    await router.push('/')
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const w = mount(App, { global: { plugins: [router, [VueQueryPlugin, { queryClient: qc }]] } })
+    await flushPromises()
+    expect(useAppToast().value).toEqual({ kind: 'error', text: 'Некорректный адрес сервера. Проверьте настройки подключения.' })
+    expect(w.get('[role="status"].bg-destructive').text()).toContain('Некорректный адрес сервера')
+    expect(w.text()).toContain('home')
+    w.unmount()
+    qc.clear()
   })
 })
 

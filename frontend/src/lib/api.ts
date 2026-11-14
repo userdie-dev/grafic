@@ -1,10 +1,13 @@
-import { API_URL, http, setToken } from "@/app/config/axios";
+import { API_URL, http, isApiUrlValid, setToken } from "@/app/config/axios";
 import { toUtcInput } from "./tz";
 import type { Device, Shift, ShiftInput, Subscription } from "./dto";
 
 export { setToken };
 
-const get = <T>(url: string) => http.get<T>(url).then((r) => r.data);
+const get = <T>(url: string) => http.get<T>(url).then((r) => {
+  if (!Array.isArray(r.data)) throw new Error('Сервер вернул некорректный список данных.')
+  return r.data;
+});
 const send = <T>(
   method: "post" | "put" | "delete",
   url: string,
@@ -43,4 +46,4 @@ export const api = {
 
 /** SSE endpoint; EventSource cannot set headers, so the token goes in the query. */
 export const eventsUrl = (deviceToken: string) =>
-  `${API_URL}/events?token=${encodeURIComponent(deviceToken)}`;
+  isApiUrlValid ? `${API_URL}/events?token=${encodeURIComponent(deviceToken)}` : undefined;

@@ -1,7 +1,6 @@
 <template>
   <div class="mx-auto flex min-h-dvh max-w-3xl flex-col">
     <main class="flex-1 overflow-x-hidden p-4 pb-28 pt-[calc(1rem+max(env(safe-area-inset-top),var(--safe-area-inset-top,0px)))]">
-      <p v-if="s.error && !offline" class="mb-4 rounded-2xl bg-destructive/10 p-3 text-sm text-destructive">{{ s.error }}</p>
       <RouterView />
     </main>
 
@@ -56,12 +55,12 @@
 
 <script setup lang="ts">
 import { LoaderCircle } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { RouterView } from 'vue-router'
 import AppNav from '@/components/AppNav.vue'
 import AppToast from '@/components/AppToast.vue'
 import OnboardingGuide from '@/components/OnboardingGuide.vue'
-import { useAppToast } from '@/composables/useAppToast'
+import { showAppToast, useAppToast } from '@/composables/useAppToast'
 import { useConnection } from '@/composables/useConnection'
 import { useCommonOffNotify } from '@/composables/useCommonOffNotify'
 import { useUpdateStatus } from '@/composables/useUpdateStatus'
@@ -71,6 +70,9 @@ const s = useSchedule()
 const offline = computed(() => useConnection().value === 'offline')
 const update = useUpdateStatus()
 const appToast = useAppToast()
+watch(() => s.error, (error) => {
+  if (error) showAppToast(error, 'error')
+}, { immediate: true })
 useScheduleSync()
 useCommonOffNotify()
 </script>

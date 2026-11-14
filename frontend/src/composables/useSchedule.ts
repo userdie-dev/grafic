@@ -13,6 +13,7 @@ import { holidayName } from '@/lib/holidays'
 import { MOCK_FRIENDS, USE_MOCK_FRIENDS, mockShifts } from '@/lib/mock'
 import { useScheduleStore } from '@/stores/schedule'
 import { setConnection } from '@/composables/useConnection'
+import { showAppToast } from '@/composables/useAppToast'
 
 export const COLORS = ['#2563eb', '#16a34a', '#d97706', '#db2777', '#7c3aed', '#0891b2', '#dc2626', '#65a30d']
 export const ME = 'me'
@@ -248,7 +249,10 @@ export function useScheduleSync() {
   const store = useScheduleStore()
   const qc = useQueryClient()
 
-  store.ensureDevice().catch(() => setConnection('offline'))
+  store.ensureDevice().catch((error: unknown) => {
+    setConnection('offline')
+    showAppToast(error instanceof Error ? error.message : 'Не удалось подключиться к серверу.', 'error')
+  })
 
   // The stream alone is a poor signal (webviews and proxies drop it while plain requests work),
   // so after a stream error we ask the server directly and only then declare it unreachable.

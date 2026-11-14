@@ -25,6 +25,23 @@ const load = async () => {
 }
 
 describe('axios config', () => {
+  beforeEach(() => vi.stubEnv('VITE_API_URL', 'http://localhost:3000'))
+
+  it('rejects an invalid API address without sending a request or opening SSE', async () => {
+    vi.stubEnv('VITE_API_URL', 'wqeq')
+    const { http, calls } = await load()
+    await expect(http.get('/subscriptions')).rejects.toThrow('Некорректный адрес сервера')
+    expect(calls).toHaveLength(0)
+    const { eventsUrl } = await import('@/lib/api')
+    expect(eventsUrl('token')).toBeUndefined()
+  })
+
+  it('rejects HTML returned by an incorrect API endpoint', async () => {
+    const { http, setRespond } = await load()
+    setRespond(async (config) => ({ data: '<html></html>', status: 200, headers: { 'content-type': 'text/html' }, config }))
+    await expect(http.get('/subscriptions')).rejects.toThrow('Сервер вернул страницу вместо данных')
+  })
+
   it('defaults the API url to localhost:3000', async () => {
     vi.stubEnv('VITE_API_URL', undefined)
     const { API_URL } = await load()
@@ -94,10 +111,18 @@ describe('api', () => {
   beforeEach(async () => {
     vi.stubEnv('VITE_API_URL', 'http://localhost:3000')
     mod = await load()
+    mod.setRespond(async (config) => ({ data: [], status: 200, headers: {}, config }))
     api = await import('@/lib/api')
   })
 
   const last = () => mod.calls.at(-1)!
+
+  it('rejects malformed lists before they reach the calendar', async () => {
+    mod.setRespond(async (config) => ({ data: { message: 'unexpected' }, status: 200, headers: {}, config }))
+    await expect(api.api.subscriptions()).rejects.toThrow('некорректный список данных')
+    await expect(api.api.myShifts()).rejects.toThrow('некорректный список данных')
+    await expect(api.api.friendShifts('friend')).rejects.toThrow('некорректный список данных')
+  })
 
   it('builds requests', async () => {
     await api.registerDevice()
