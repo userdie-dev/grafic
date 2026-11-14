@@ -12,7 +12,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 // Database configuration based on environment
 const getDatabaseConfig = () => {
-  // If DATABASE_URL is set (production on Vercel with external DB)
+  // If DATABASE_URL is set (production with an external database)
   if (process.env.DATABASE_URL) {
     console.log('Using PostgreSQL from DATABASE_URL');
     return {

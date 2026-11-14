@@ -67,11 +67,9 @@ npm run dev
 
 ## Production
 
-Развернуто на Vercel: https://grafic-rose.vercel.app/
-
-### Deployment
-
-Backend и frontend автоматически деплоятся при push в main ветку.
+Backend собирается и запускается как обычное Node.js-приложение (`npm run build` + `npm start`),
+для production нужна PostgreSQL база и переменная `DATABASE_URL`. Подробности — в
+[backend/README.md](backend/README.md).
 
 ## Архитектура
 

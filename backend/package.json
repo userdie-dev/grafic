@@ -8,8 +8,7 @@
     "build": "nest build",
     "start": "node dist/main",
     "start:dev": "nest start --watch",
-    "test:cov": "vitest run --coverage",
-    "vercel-build": "nest build"
+    "test:cov": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
