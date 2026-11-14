@@ -9,10 +9,12 @@ Vercel возвращает `500 FUNCTION_INVOCATION_FAILED` потому что
 
 ### Вариант 1: Использовать существующую Neon БД (РЕКОМЕНДУЕТСЯ)
 
-У вас уже есть DATABASE_URL в `.env`:
+Возьмите строку подключения из панели Neon (Project → Connection string):
 ```
-postgresql://neondb_owner:npg_8ltvRKfQzyC3@ep-damp-darkness-babjqs6y-pooler.c-8.eu-central-1.aws.neon.tech/neondb?sslmode=require
+postgresql://<user>:<password>@<host>/<database>?sslmode=require
 ```
+
+> **Важно:** реальные логины/пароли не храните в репозитории — только в Environment Variables на Vercel.
 
 **Шаги:**
 1. Откройте https://vercel.com/dashboard
@@ -20,7 +22,7 @@ postgresql://neondb_owner:npg_8ltvRKfQzyC3@ep-damp-darkness-babjqs6y-pooler.c-8.
 3. Перейдите в **Settings → Environment Variables**
 4. Добавьте новую переменную:
    - Name: `DATABASE_URL`
-   - Value: `postgresql://neondb_owner:npg_8ltvRKfQzyC3@ep-damp-darkness-babjqs6y-pooler.c-8.eu-central-1.aws.neon.tech/neondb?sslmode=require`
+   - Value: `postgresql://<user>:<password>@<host>/<database>?sslmode=require`
    - Environments: выберите **Production**, **Preview**, **Development**
 5. Нажмите **Save**
 6. Перейдите в **Deployments**

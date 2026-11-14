@@ -96,19 +96,27 @@ backend/
 
 ### Vercel
 
-Приложение поддерживает деплой на Vercel.
+Приложение деплоится на Vercel как обычный NestJS-проект (zero-config): Vercel сам
+находит `src/main.ts` и собирает всё приложение в одну Vercel Function.
 
 **Требования:**
 - PostgreSQL база данных (например, Vercel Postgres, Supabase, Neon)
 
 **Настройка:**
 
-1. Создайте PostgreSQL базу данных
-2. В настройках Vercel проекта добавьте переменную окружения:
+1. В Vercel: **Settings → General → Root Directory** = `backend`
+2. **Settings → Build & Development**: Framework Preset = `NestJS` (в репозитории уже
+   задан `backend/vercel.json` с `"framework": "nestjs"`), Build Command / Output Directory
+   оставьте пустыми (по умолчанию)
+3. В **Settings → Environment Variables** добавьте:
    ```
    DATABASE_URL=postgresql://user:password@host:5432/database
    ```
-3. Deploy автоматически произойдет при push в main
+4. Deploy автоматически произойдет при push в main
+
+Файл `backend/vercel.json` не должен содержать `buildCommand`, `outputDirectory`,
+`functions` с `runtime` или legacy `routes` — иначе Vercel перестаёт использовать
+встроенную сборку NestJS.
 
 **Локальная разработка использует SQLite**, production на Vercel использует PostgreSQL.
 

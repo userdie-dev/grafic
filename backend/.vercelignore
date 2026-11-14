@@ -1,3 +1,10 @@
-# Vercel ignore file
-# Don't ignore node_modules - Vercel needs to bundle dependencies
-!node_modules
+node_modules
+dist
+coverage
+test
+scripts
+*.sqlite
+*.sqlite-journal
+*.tsbuildinfo
+.env
+.env.*
