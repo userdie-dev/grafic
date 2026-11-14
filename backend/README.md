@@ -44,7 +44,17 @@ npm run test:cov
 
 ## База данных
 
-Используется SQLite с TypeORM. База создается автоматически при первом запуске в файле `grafic.sqlite`.
+Локально используется SQLite с TypeORM. База создается автоматически при первом запуске в файле `grafic.sqlite`.
+
+Если задан `DATABASE_URL`, приложение подключается к PostgreSQL (Neon), а TypeORM создает/обновляет таблицы при старте.
+
+Для прямых SQL-запросов через [Neon serverless driver](https://neon.tech/docs/serverless/serverless-driver) есть `DatabaseService`:
+
+```ts
+import { DatabaseService } from './database/database.service';
+
+const rows = await this.databaseService.getData();
+```
 
 ## API Endpoints
 
@@ -72,7 +82,10 @@ npm run test:cov
 
 ```env
 PORT=3000
-DATABASE_PATH=./grafic.sqlite
+# SQLite (локально)
+DB_PATH=grafic.sqlite
+# Neon PostgreSQL (если задан, используется вместо SQLite)
+DATABASE_URL=postgresql://user:password@host/db?sslmode=require
 ```
 
 ## Структура

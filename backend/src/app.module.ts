@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DatabaseModule } from './database/database.module';
 import { DevicesModule } from './devices/devices.module';
 import { Shift } from './entities/shift.entity';
 import { Subscription } from './entities/subscription.entity';
@@ -41,8 +43,15 @@ const getDatabaseConfig = () => {
 
 @Module({
   imports: [
+    // Must come first so .env is loaded before getDatabaseConfig() runs.
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', 'backend/.env'],
+      ignoreEnvFile: process.env.NODE_ENV === 'test' || !!process.env.VITEST,
+    }),
     TypeOrmModule.forRoot(getDatabaseConfig()),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    DatabaseModule,
     DevicesModule,
     EventsModule,
     ShiftsModule,
