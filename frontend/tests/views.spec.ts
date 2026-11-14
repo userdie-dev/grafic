@@ -17,10 +17,10 @@ vi.mock('@vueuse/core', async (orig) => ({
 }))
 vi.mock('@/lib/api', () => ({ registerDevice: vi.fn(), setToken: vi.fn() }))
 
-import ShareView from '@/components/ShareView.vue'
+import ShareView from '@/components/ShareView/index.vue'
 import MonthCalendar from '@/components/MonthCalendar.vue'
-import CalendarPage from '@/pages/CalendarPage.vue'
-import FriendEditor from '@/components/FriendEditor.vue'
+import CalendarPage from '@/pages/CalendarPage/index.vue'
+import FriendEditor from '@/components/FriendEditor/index.vue'
 import { useDayEditor } from '@/composables/useDayEditor'
 import { FRIEND_EDITOR_KEY, useFriendEditor } from '@/composables/useFriendEditor'
 import { hideAppToast, useAppToast } from '@/composables/useAppToast'

@@ -101,7 +101,7 @@
         <DrawerTitle class="px-4 pt-4">{{ editingGroup ? 'Редактировать группу' : 'Создать группу' }}</DrawerTitle>
         <DrawerDescription class="sr-only">Форма создания группы</DrawerDescription>
         
-        <form class="space-y-4 p-4" @submit.prevent="saveGroup">
+        <form class="space-y-4 p-4" @submit="onSubmit">
           <div class="space-y-2">
             <label class="block text-sm font-medium">Название группы</label>
             <Input v-model="groupForm.name" placeholder="Например: Работа, Семья" required />
@@ -171,7 +171,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RiAddLine, RiCloseLine, RiDeleteBinLine, RiEditLine } from '@remixicon/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -179,6 +179,8 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/compone
 import { useScheduleStore, type Group } from '@/stores/schedule'
 import { useSchedule } from '@/composables/useSchedule'
 import { COLORS } from '@/composables/useSchedule'
+import { useFormSchema } from '@/composables/useFormSchema'
+import { groupFormSchema, groupFormDefaults } from './models'
 
 const store = useScheduleStore()
 const s = useSchedule()
@@ -188,10 +190,7 @@ const showAddMemberDialog = ref(false)
 const editingGroup = ref<Group | null>(null)
 const selectedGroupForMember = ref<Group | null>(null)
 
-const groupForm = ref({
-  name: '',
-  color: COLORS[0]!,
-})
+const { handleSubmit, values: groupForm, setValues, resetForm } = useFormSchema(groupFormSchema, groupFormDefaults)
 
 const availablePeople = computed(() => {
   if (!selectedGroupForMember.value) return []
@@ -209,35 +208,32 @@ function getMemberColor(id: string) {
 
 function editGroup(group: Group) {
   editingGroup.value = group
-  groupForm.value = {
+  setValues({
     name: group.name,
     color: group.color,
-  }
+  })
   showCreateDialog.value = true
 }
 
-function saveGroup() {
-  if (!groupForm.value.name.trim()) return
+const onSubmit = handleSubmit((values) => {
+  if (!values.name.trim()) return
 
   if (editingGroup.value) {
     store.updateGroup(editingGroup.value.id, {
-      name: groupForm.value.name,
-      color: groupForm.value.color,
+      name: values.name,
+      color: values.color,
     })
   } else {
-    store.addGroup(groupForm.value.name, groupForm.value.color)
+    store.addGroup(values.name, values.color)
   }
 
   cancelEdit()
-}
+})
 
 function cancelEdit() {
   showCreateDialog.value = false
   editingGroup.value = null
-  groupForm.value = {
-    name: '',
-    color: COLORS[0]!,
-  }
+  resetForm()
 }
 
 function addMember(group: Group) {

@@ -7,8 +7,8 @@
         isMe ? 'Цвет и видимость в календаре' : 'Имя, цвет и видимость друга в календаре'
       }}</DrawerDescription>
 
-      <form class="space-y-4 px-1" @submit.prevent="save">
-        <Input v-if="!isMe" v-model="name" maxlength="30" placeholder="Имя" aria-label="Имя" class="h-10" />
+      <form class="space-y-4 px-1" @submit="onSubmit">
+        <Input v-if="!isMe" v-model="formValues.name" maxlength="30" placeholder="Имя" aria-label="Имя" class="h-10" />
 
         <div class="flex flex-wrap gap-2.5" role="radiogroup" aria-label="Цвет">
           <button
@@ -16,16 +16,16 @@
             :key="c"
             type="button"
             role="radio"
-            :aria-checked="!pickerOpen && color === c"
+            :aria-checked="!pickerOpen && formValues.color === c"
             :aria-label="c"
             class="size-8 rounded-full ring-offset-2 ring-offset-background transition active:scale-90"
-            :class="!pickerOpen && color === c ? 'ring-2 ring-foreground' : ''"
+            :class="!pickerOpen && formValues.color === c ? 'ring-2 ring-foreground' : ''"
             :style="{ background: c }"
             @click="pickPreset(c)"
           />
 
           <!-- the palette is the last option: an arbitrary colour in a popover -->
-          <ColorPicker v-model="color" v-model:open="pickerOpen" :checked="pickerOpen" @update:model-value="onCustom" />
+          <ColorPicker v-model="formValues.color" v-model:open="pickerOpen" :checked="pickerOpen" @update:model-value="onCustom" />
         </div>
 
         <button
@@ -63,6 +63,8 @@ import { showAppToast } from '@/composables/useAppToast'
 import { useDrawerClose } from '@/composables/useDrawerClose'
 import { useFriendEditor } from '@/composables/useFriendEditor'
 import { COLORS, ME } from '@/composables/useSchedule'
+import { useFormSchemaWithValues } from '@/composables/useFormSchema'
+import { friendFormSchema } from './models'
 
 const editor = useFriendEditor()
 const person = editor.friend.value!
@@ -70,12 +72,15 @@ const person = editor.friend.value!
 const { open, close, onOpenChange } = useDrawerClose(editor.close)
 
 const isMe = person.id === ME
-const name = ref(person.name)
-const color = ref(person.color)
+
+const { handleSubmit, values: formValues } = useFormSchemaWithValues(friendFormSchema, {
+  name: person.name,
+  color: person.color,
+})
 const pickerOpen = ref(false)
 
 function pickPreset(c: string) {
-  color.value = c
+  formValues.color = c
   pickerOpen.value = false
 }
 
@@ -84,19 +89,19 @@ function onCustom() {
   pickerOpen.value = true
 }
 
-function save() {
+const onSubmit = handleSubmit((values) => {
   if (isMe) {
-    editor.save(person.name, color.value)
+    editor.save(person.name, values.color)
     close()
     return
   }
   const isNewFriend = !person.subId || person.name === 'Друг'
-  editor.save(name.value.trim() || person.name, color.value)
+  editor.save(values.name.trim() || person.name, values.color)
   if (isNewFriend) {
-    showAppToast(`${name.value.trim() || person.name} добавлен`, 'success')
+    showAppToast(`${values.name.trim() || person.name} добавлен`, 'success')
   }
   close()
-}
+})
 
 // removing a friend drops the subscription, so it takes two taps
 const removing = ref(false)

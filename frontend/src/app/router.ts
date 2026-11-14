@@ -1,9 +1,9 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import CalendarPage from '@/pages/CalendarPage.vue'
-import GroupsPage from '@/pages/GroupsPage.vue'
-import PresetsPage from '@/pages/PresetsPage.vue'
-import SharePage from '@/pages/SharePage.vue'
-import SettingsPage from '@/pages/SettingsPage.vue'
+import CalendarPage from '@/pages/CalendarPage/index.vue'
+import GroupsPage from '@/pages/GroupsPage/index.vue'
+import PresetsPage from '@/pages/PresetsPage/index.vue'
+import SharePage from '@/pages/SharePage/index.vue'
+import SettingsPage from '@/pages/SettingsPage/index.vue'
 
 export const router = createRouter({
   history: createWebHashHistory(),

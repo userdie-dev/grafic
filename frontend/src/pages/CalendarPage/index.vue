@@ -30,7 +30,7 @@
 import { computed } from 'vue'
 import MonthCalendar from '@/components/MonthCalendar.vue'
 import PeopleChips from '@/components/PeopleChips.vue'
-import FriendEditor from '@/components/FriendEditor.vue'
+import FriendEditor from '@/components/FriendEditor/index.vue'
 import ShiftEditor from '@/components/ShiftEditor.vue'
 import { provideDayEditor } from '@/composables/useDayEditor'
 import { provideFriendEditor } from '@/composables/useFriendEditor'

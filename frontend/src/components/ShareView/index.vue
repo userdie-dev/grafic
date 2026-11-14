@@ -26,9 +26,9 @@
         <CardTitle class="text-base">Добавить друга по коду</CardTitle>
       </CardHeader>
       <CardContent>
-        <form class="space-y-2" @submit.prevent="add">
-          <Input v-model="code" :maxlength="CODE_MAX" placeholder="Код" class="h-10 tracking-widest" />
-          <Input v-model="label" maxlength="30" placeholder="Имя" class="h-10" />
+        <form class="space-y-2" @submit="onSubmit">
+          <Input v-model="friendForm.code" :maxlength="CODE_MAX" placeholder="Код" class="h-10 tracking-widest" />
+          <Input v-model="friendForm.label" maxlength="30" placeholder="Имя" class="h-10" />
           <Button size="lg" class="h-10 w-full" :disabled="!valid">
             <RiUserAddLine /> Добавить
           </Button>
@@ -48,6 +48,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { CODE_MAX, CODE_MIN } from '@/lib/dto'
 import { useSchedule } from '@/composables/useSchedule'
+import { useFormSchema } from '@/composables/useFormSchema'
+import { addFriendSchema, addFriendDefaults } from './models'
 
 const s = useSchedule()
 const { copy } = useClipboard()
@@ -73,16 +75,16 @@ function askRegenerate() {
   confirmTimer = setTimeout(() => (confirming.value = false), 4000)
 }
 
-const code = ref('')
-const label = ref('')
+const { handleSubmit, values: friendForm, resetForm } = useFormSchema(addFriendSchema, addFriendDefaults)
 
-const valid = computed(() => code.value.trim().length >= CODE_MIN && code.value.trim().length <= CODE_MAX)
+const valid = computed(() => 
+  friendForm.code.trim().length >= CODE_MIN && friendForm.code.trim().length <= CODE_MAX
+)
 
-async function add() {
+const onSubmit = handleSubmit(async (values) => {
   if (!valid.value) return
-  if (await s.addFriend(code.value, label.value)) {
-    code.value = ''
-    label.value = ''
+  if (await s.addFriend(values.code, values.label)) {
+    resetForm()
     return
   }
   const reason = s.error || ''
@@ -90,5 +92,6 @@ async function add() {
     reason.includes('yourself') ? 'Это ваш собственный код' : 'Не удалось добавить друга. Проверьте код',
     'error',
   )
-}
+})
+
 </script>

@@ -22,7 +22,7 @@ vi.mock('@/lib/api', () => ({
 }))
 
 import { api } from '@/lib/api'
-import SettingsPage from '@/pages/SettingsPage.vue'
+import SettingsPage from '@/pages/SettingsPage/index.vue'
 import {
   notificationsSupported,
   requestNotifyPermission,

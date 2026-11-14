@@ -1,6 +1,7 @@
 import { computed, onScopeDispose, reactive, watch } from 'vue'
 import { useEventSource } from '@vueuse/core'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { groupBy, uniq } from 'es-toolkit'
 import { api, eventsUrl } from '@/lib/api'
 import type { Shift, ShiftInput } from '@/lib/dto'
 import { toLocalShift } from '@/lib/tz'

@@ -21,8 +21,8 @@ vi.mock('@/lib/api', () => ({
 
 import AppNav from '@/components/AppNav.vue'
 import App from '@/app/App.vue'
-import SettingsPage from '@/pages/SettingsPage.vue'
-import SharePage from '@/pages/SharePage.vue'
+import SettingsPage from '@/pages/SettingsPage/index.vue'
+import SharePage from '@/pages/SharePage/index.vue'
 import { useScheduleStore } from '@/stores/schedule'
 
 beforeEach(() => {

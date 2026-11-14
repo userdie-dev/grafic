@@ -72,7 +72,7 @@
         <DrawerTitle class="px-4 pt-4">{{ editingPreset ? 'Редактировать пресет' : 'Создать пресет' }}</DrawerTitle>
         <DrawerDescription class="sr-only">Форма создания пресета</DrawerDescription>
         
-        <form class="space-y-4 overflow-y-auto p-4" @submit.prevent="savePreset">
+        <form class="space-y-4 overflow-y-auto p-4" @submit="onSubmit">
           <div class="space-y-2">
             <label class="block text-sm font-medium">Название</label>
             <Input v-model="presetForm.label" placeholder="Например: Моя смена" required />
@@ -175,6 +175,8 @@ import { TimePicker } from '@/components/ui/time-picker'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { usePresetsStore } from '@/stores/presets'
 import { describe, type Preset } from '@/lib/presets'
+import { useFormSchema } from '@/composables/useFormSchema'
+import { presetFormSchema, presetFormDefaults } from './models'
 
 const presets = usePresetsStore()
 
@@ -193,29 +195,20 @@ const showCreateDialog = ref(false)
 const editingPreset = ref<Preset | null>(null)
 const formError = ref('')
 
-const presetForm = ref({
-  label: '',
-  hint: '',
-  ruleType: 'once' as 'once' | 'weekly' | 'cycle' | 'weekdays',
-  cycleWork: 2,
-  cycleOff: 2,
-  weekdays: [1, 2, 3, 4, 5] as number[],
-  dayStart: '09:00',
-  dayEnd: '18:00',
-})
+const { handleSubmit, values: presetForm, setValues, resetForm } = useFormSchema(presetFormSchema, presetFormDefaults)
 
 function toggleWeekday(day: number) {
-  const index = presetForm.value.weekdays.indexOf(day)
+  const index = presetForm.weekdays.indexOf(day)
   if (index === -1) {
-    presetForm.value.weekdays.push(day)
+    presetForm.weekdays.push(day)
   } else {
-    presetForm.value.weekdays.splice(index, 1)
+    presetForm.weekdays.splice(index, 1)
   }
 }
 
 function editPreset(preset: Preset) {
   editingPreset.value = preset
-  presetForm.value = {
+  setValues({
     label: preset.label,
     hint: preset.hint,
     ruleType: preset.rule.type,
@@ -224,38 +217,38 @@ function editPreset(preset: Preset) {
     weekdays: preset.rule.type === 'weekdays' ? [...preset.rule.days] : [1, 2, 3, 4, 5],
     dayStart: preset.day[0],
     dayEnd: preset.day[1],
-  }
+  })
   showCreateDialog.value = true
 }
 
-function savePreset() {
+const onSubmit = handleSubmit((values) => {
   formError.value = ''
 
-  if (!presetForm.value.label.trim()) {
+  if (!values.label.trim()) {
     formError.value = 'Укажите название пресета'
     return
   }
 
-  if (presetForm.value.ruleType === 'weekdays' && presetForm.value.weekdays.length === 0) {
+  if (values.ruleType === 'weekdays' && values.weekdays.length === 0) {
     formError.value = 'Выберите хотя бы один день недели'
     return
   }
 
   let rule: Preset['rule']
-  if (presetForm.value.ruleType === 'cycle') {
-    rule = { type: 'cycle', work: presetForm.value.cycleWork, off: presetForm.value.cycleOff }
-  } else if (presetForm.value.ruleType === 'weekdays') {
-    rule = { type: 'weekdays', days: [...presetForm.value.weekdays] }
+  if (values.ruleType === 'cycle') {
+    rule = { type: 'cycle', work: values.cycleWork, off: values.cycleOff }
+  } else if (values.ruleType === 'weekdays') {
+    rule = { type: 'weekdays', days: [...values.weekdays] }
   } else {
-    rule = { type: presetForm.value.ruleType }
+    rule = { type: values.ruleType }
   }
 
   const presetData = {
-    label: presetForm.value.label,
-    hint: presetForm.value.hint,
+    label: values.label,
+    hint: values.hint,
     rule,
-    day: [presetForm.value.dayStart, presetForm.value.dayEnd] as [string, string],
-    night: [presetForm.value.dayStart, presetForm.value.dayEnd] as [string, string], // Same as day
+    day: [values.dayStart, values.dayEnd] as [string, string],
+    night: [values.dayStart, values.dayEnd] as [string, string], // Same as day
   }
 
   if (editingPreset.value) {
@@ -267,21 +260,12 @@ function savePreset() {
   }
 
   cancelEdit()
-}
+})
 
 function cancelEdit() {
   showCreateDialog.value = false
   editingPreset.value = null
   formError.value = ''
-  presetForm.value = {
-    label: '',
-    hint: '',
-    ruleType: 'once',
-    cycleWork: 2,
-    cycleOff: 2,
-    weekdays: [1, 2, 3, 4, 5],
-    dayStart: '09:00',
-    dayEnd: '18:00',
-  }
+  resetForm()
 }
 </script>
