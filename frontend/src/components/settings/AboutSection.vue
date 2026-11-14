@@ -6,11 +6,16 @@
     <SettingsRow interactive :icon="CircleHelp" tint="bg-violet-200 text-violet-800" title="Как пользоваться" hint="Показать инструкцию заново" @click="show">
       <ChevronRight class="size-5 text-muted-foreground" />
     </SettingsRow>
-    <SettingsRow :icon="Info" tint="bg-primary/15 text-primary" title="Версия приложения">
-      <span class="text-sm text-muted-foreground">{{ version }}</span>
-    </SettingsRow>
-    <SettingsRow interactive :icon="RefreshCw" tint="bg-emerald-200 text-emerald-800" title="Проверить обновления" :hint="checking ? 'Проверяем…' : undefined" @click="check">
+    <SettingsRow
+      interactive
+      :icon="RefreshCw"
+      tint="bg-emerald-200 text-emerald-800"
+      title="Версия приложения"
+      :hint="checking ? 'Проверяем обновления…' : 'Нажмите, чтобы проверить обновления'"
+      @click="check"
+    >
       <LoaderCircle v-if="checking" class="size-5 animate-spin text-muted-foreground" aria-label="Проверяем" />
+      <span v-else class="text-sm text-muted-foreground">{{ version }}</span>
     </SettingsRow>
   </SettingsSection>
 
@@ -18,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ChevronRight, CircleHelp, Info, LoaderCircle, RefreshCw, Wifi } from '@lucide/vue'
+import { ChevronRight, CircleHelp, LoaderCircle, RefreshCw, Wifi } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import { checkForUpdates } from '@/app/config/updater'
 import { useConnection } from '@/composables/useConnection'
