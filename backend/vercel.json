@@ -6,8 +6,8 @@
       "dest": "api/health.ts"
     },
     {
-      "src": "/test-neon",
-      "dest": "api/test-neon.ts"
+      "src": "/neon-test",
+      "dest": "serverless/neon-test.ts"
     }
   ]
 }
