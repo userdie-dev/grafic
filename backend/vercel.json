@@ -1,46 +1,13 @@
 {
   "version": 2,
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "@vercel/node@latest"
-    }
-  },
   "routes": [
-    {
-      "src": "/working",
-      "dest": "api/working.ts"
-    },
     {
       "src": "/health",
       "dest": "api/health.ts"
     },
     {
-      "src": "/minimal",
-      "dest": "api/minimal.ts"
-    },
-    {
       "src": "/test-neon",
       "dest": "api/test-neon.ts"
-    },
-    {
-      "src": "/simple-pg",
-      "dest": "api/simple-pg.ts"
-    },
-    {
-      "src": "/debug-modules",
-      "dest": "api/debug-modules.ts"
-    },
-    {
-      "src": "/test-db",
-      "dest": "api/test-db.ts"
-    },
-    {
-      "src": "/test-pg",
-      "dest": "api/test-pg.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "api/index.ts"
     }
   ]
 }
