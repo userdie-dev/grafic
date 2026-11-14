@@ -26,6 +26,7 @@ const load = async () => {
 
 describe('axios config', () => {
   it('defaults the API url to localhost:3000', async () => {
+    vi.stubEnv('VITE_API_URL', undefined)
     const { API_URL } = await load()
     expect(API_URL).toBe('http://localhost:3000')
   })
@@ -91,6 +92,7 @@ describe('api', () => {
   let mod: Awaited<ReturnType<typeof load>>
   let api: typeof import('@/lib/api')
   beforeEach(async () => {
+    vi.stubEnv('VITE_API_URL', 'http://localhost:3000')
     mod = await load()
     api = await import('@/lib/api')
   })

@@ -35,6 +35,8 @@ const makeRouter = () =>
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: { template: '<p>home</p>' } },
+      { path: '/groups', component: { template: '<p>groups</p>' } },
+      { path: '/presets', component: { template: '<p>presets</p>' } },
       { path: '/share', component: { template: '<p>share</p>' } },
       { path: '/settings', component: { template: '<p>settings</p>' } },
     ],
@@ -47,8 +49,8 @@ describe('AppNav', () => {
     await router.isReady()
     const w = mount(AppNav, { global: { plugins: [router] } })
     const spans = w.findAll('a > span')
-    expect(spans.map((s) => s.text())).toEqual(['Календарь', 'Поделиться', 'Настройки'])
-    expect(spans.map((s) => s.classes().includes('text-primary'))).toEqual([false, true, false])
+    expect(spans.map((s) => s.text())).toEqual(['Календарь', 'Группы', 'Пресеты', 'Поделиться', 'Настройки'])
+    expect(spans.map((s) => s.classes().includes('text-primary'))).toEqual([false, false, false, true, false])
   })
 })
 

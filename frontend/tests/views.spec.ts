@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { DOMWrapper, flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CalendarDate } from '@internationalized/date'
@@ -125,10 +125,13 @@ describe('ShareView', () => {
 
   it('adds a friend and clears the fields on success only', async () => {
     const w = mount(ShareView)
+    await flushPromises()
     const [code, label] = w.findAll('input')
     await code!.setValue('ABCD')
     await label!.setValue('Боря')
-    await w.get('form').trigger('submit')
+    await nextTick()
+    await flushPromises()
+    await w.get('form').trigger('submit.prevent')
     await flushPromises()
     expect(h.s.addFriend).toHaveBeenCalledWith('ABCD', 'Боря')
     expect((code!.element as HTMLInputElement).value).toBe('')
@@ -137,13 +140,15 @@ describe('ShareView', () => {
     h.s.addFriend.mockResolvedValue(false)
     const appToast = useAppToast()
     await code!.setValue('WXYZ')
-    await w.get('form').trigger('submit')
+    await nextTick()
+    await flushPromises()
+    await w.get('form').trigger('submit.prevent')
     await flushPromises()
     expect((code!.element as HTMLInputElement).value).toBe('WXYZ')
     expect(appToast.value).toEqual({ kind: 'error', text: 'Не удалось добавить друга. Проверьте код' })
 
     h.s.error = 'Cannot subscribe to yourself'
-    await w.get('form').trigger('submit')
+    await w.get('form').trigger('submit.prevent')
     await flushPromises()
     expect(appToast.value).toEqual({ kind: 'error', text: 'Это ваш собственный код' })
   })
@@ -429,12 +434,21 @@ describe('FriendEditor', () => {
   it('saves a new name and colour, then closes after the animation', async () => {
     vi.useFakeTimers()
     await open()
-    expect(input().value).toBe('Аня')
-    input().value = '  Анна '
-    input().dispatchEvent(new Event('input', { bubbles: true }))
+    await flushPromises()
+    const input = body().querySelector<HTMLInputElement>('input[placeholder="Имя"]')
+    expect(input).toBeTruthy()
+    expect(input!.value).toBe('Аня')
+    input!.value = '  Анна '
+    input!.dispatchEvent(new InputEvent('input', { bubbles: true }))
+    input!.dispatchEvent(new Event('change', { bubbles: true }))
     await nextTick()
+    await flushPromises()
     body().querySelectorAll<HTMLElement>('[role="radio"]')[0]!.click()
-    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await nextTick()
+    await flushPromises()
+    const formEl = body().querySelector('form')!
+    const formWrapper = new DOMWrapper(formEl)
+    await formWrapper.trigger('submit')
     await flushPromises()
     expect(editor.save).toHaveBeenCalledWith('Анна', '#111')
     expect(editor.close).not.toHaveBeenCalled()
@@ -444,6 +458,7 @@ describe('FriendEditor', () => {
 
   it('offers a palette as the last colour option in a popover', async () => {
     await open()
+    await flushPromises()
     const radios = [...body().querySelectorAll<HTMLElement>('[role="radio"]')]
     expect(radios.at(-1)!.getAttribute('aria-label')).toBe('Свой цвет')
     expect(radios.at(-1)!.getAttribute('aria-checked')).toBe('false')
@@ -455,13 +470,18 @@ describe('FriendEditor', () => {
     expect(radios.at(-1)!.getAttribute('aria-checked')).toBe('true')
 
     const picker = body().querySelector('[data-slot="color-picker"]')!
-    const hex = picker.querySelector<HTMLInputElement>('input[aria-label="Цвет в HEX"]')!
-    hex.value = '#123456'
-    hex.dispatchEvent(new Event('input', { bubbles: true }))
-    hex.dispatchEvent(new Event('blur', { bubbles: true }))
+    expect(picker).toBeTruthy()
+    const hexInput = picker.querySelector<HTMLInputElement>('input[aria-label="Цвет в HEX"]')!
+    expect(hexInput).toBeTruthy()
+    hexInput.value = '#123456'
+    hexInput.dispatchEvent(new InputEvent('input', { bubbles: true }))
+    hexInput.dispatchEvent(new Event('change', { bubbles: true }))
     await nextTick()
+    await flushPromises()
 
-    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    const formEl = body().querySelector('form')!
+    const formWrapper = new DOMWrapper(formEl)
+    await formWrapper.trigger('submit')
     await flushPromises()
     expect(editor.save).toHaveBeenCalledWith('Аня', '#123456')
   })
@@ -483,22 +503,35 @@ describe('FriendEditor', () => {
 
   it('configures me without a name field', async () => {
     await mountEditor(false, false, { id: 'me', name: 'Я', color: '#111' })
+    await flushPromises()
     expect(body().querySelector('input[placeholder="Имя"]')).toBeNull()
     expect(body().textContent).toContain('Я')
     expect(body().querySelectorAll('[role="radio"]').length).toBe(3) // two colours + palette
     expect(btn('Удалить')).toBeUndefined()
 
     body().querySelectorAll<HTMLElement>('[role="radio"]')[1]!.click()
-    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await nextTick()
+    await flushPromises()
+    const formEl = body().querySelector('form')!
+    const formWrapper = new DOMWrapper(formEl)
+    await formWrapper.trigger('submit')
     await flushPromises()
     expect(editor.save).toHaveBeenCalledWith('Я', '#222')
   })
 
   it('keeps the old name when it is blank', async () => {
     await open()
-    input().value = '   '
-    input().dispatchEvent(new Event('input', { bubbles: true }))
-    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    const input = body().querySelector<HTMLInputElement>('input[placeholder="Имя"]')
+    expect(input).toBeTruthy()
+    input!.value = '   '
+    input!.dispatchEvent(new InputEvent('input', { bubbles: true }))
+    input!.dispatchEvent(new Event('change', { bubbles: true }))
+    await nextTick()
+    await flushPromises()
+    const formEl = body().querySelector('form')!
+    const formWrapper = new DOMWrapper(formEl)
+    await formWrapper.trigger('submit')
     await flushPromises()
     expect(editor.save).toHaveBeenCalledWith('Аня', '#222')
   })
@@ -537,7 +570,10 @@ describe('FriendEditor', () => {
   it('does not emit close after unmounting', async () => {
     vi.useFakeTimers()
     await open()
-    body().querySelector('form')!.dispatchEvent(new Event('submit'))
+    await flushPromises()
+    const formEl = body().querySelector('form')!
+    const formWrapper = new DOMWrapper(formEl)
+    await formWrapper.trigger('submit')
     await flushPromises()
     w.unmount()
     await vi.advanceTimersByTimeAsync(250)

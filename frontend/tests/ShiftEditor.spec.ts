@@ -150,7 +150,7 @@ describe('editing an existing shift', () => {
   it('saves the same row without removal when the start is unchanged', async () => {
     await edit()
     await submit()
-    expect(saved()[0]).toEqual([[{ date: '2030-01-07', start: '09:00', end: '18:00', note: 'Заметка' }], []])
+    expect(saved()[0]).toEqual([[{ date: '2030-01-07', start: '09:00', end: '18:00', note: 'Заметка' }], ['s1']])
     expect(body().textContent).toContain('Смены на выбранный день') // back to the list
   })
 
@@ -208,6 +208,7 @@ describe('adding shifts', () => {
   it('repeats a plain shift weekly for a year', async () => {
     await mountEditor()
     await openAdd()
+    await click(btn('Пресет'))
     await click(btn('Обычный'))
     await input(inputs().find((i) => i.placeholder === 'Заметка')!, 'Смена')
     await submit()
@@ -220,6 +221,7 @@ describe('adding shifts', () => {
   it('fills a cycle preset across months by default', async () => {
     await mountEditor()
     await openAdd()
+    await click(btn('Пресет'))
     await click(btn('2/2'))
     expect(body().textContent).toContain('2 раб., 2 вых., начиная с выбранного дня')
     expect(body().textContent).not.toContain('Заполнить график до')
@@ -234,9 +236,14 @@ describe('adding shifts', () => {
   it('fills weekday presets and supports night shifts', async () => {
     await mountEditor()
     await openAdd()
+    await click(btn('Пресет'))
     await click(btn('5/2'))
     expect(body().textContent).toContain('Пн–Пт рабочие')
-    await click(btn('Ночные'))
+    // Изменим время на ночное вручную через TimePicker
+    const pickers = w.findAllComponents({ name: 'TimePicker' })
+    pickers[0]!.vm.$emit('update:modelValue', '22:00')
+    pickers[1]!.vm.$emit('update:modelValue', '06:00')
+    await flushPromises()
     await submit()
     const items = (saved()[0] as any)[0]
     expect(items.slice(0, 5).map((i: any) => i.date)).toEqual(['2030-01-07', '2030-01-08', '2030-01-09', '2030-01-10', '2030-01-11'])
@@ -247,6 +254,7 @@ describe('adding shifts', () => {
   it('switching back to the plain preset restores its times', async () => {
     await mountEditor()
     await openAdd()
+    await click(btn('Пресет'))
     await click(btn('2/2'))
     await click(btn('Обычный'))
     await submit()
@@ -259,6 +267,7 @@ describe('custom presets', () => {
   const open = async () => {
     await mountEditor()
     await openAdd()
+    await click(btn('Пресет'))
     await click(draftToggle())
   }
   const field = (placeholderOrIndex: string | number) =>
