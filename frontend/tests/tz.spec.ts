@@ -39,4 +39,15 @@ describe('DST change nights', () => {
     const local = { date: '2026-03-08', start: '20:00', end: '08:00' }
     expect(toLocalShift(toUtcInput(local))).toEqual(local)
   })
+
+  it.each([
+    ['Pacific/Auckland', '2023-09-24', '12:00', '19:00'],
+    ['America/New_York', '2020-11-01', '04:00', '13:00'],
+  ])('keeps both endpoints across the DST change in %s', (tz, date, start, end) => {
+    process.env.TZ = tz
+    const local = { date, start: '00:00', end: '08:00' }
+    const utc = toUtcInput(local)
+    expect(utc).toEqual({ date: tz === 'Pacific/Auckland' ? '2023-09-23' : date, start, end })
+    expect(toLocalShift(utc)).toEqual(local)
+  })
 })

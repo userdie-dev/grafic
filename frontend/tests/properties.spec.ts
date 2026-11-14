@@ -26,7 +26,29 @@ const existsLocally = (day: string, t: string) => {
   return at.getHours() === +t.slice(0, 2) && at.getMinutes() === +t.slice(3)
 }
 
+/** The date + HH:mm format cannot retain a second end date or distinguish repeated DST times. */
+const isLosslessSpan = (start: Date, end: Date) => {
+  const duration = end.getTime() - start.getTime()
+  if (duration <= 0 || duration >= 24 * 3600_000) return false
+  const localTime = (at: Date) => `${p2(at.getHours())}:${p2(at.getMinutes())}`
+  const endDay = localTime(end) <= localTime(start) ? addDays(start, 1) : start
+  if (iso(end) !== iso(endDay)) return false
+  // Date chooses the first occurrence of a repeated wall-clock time. The second cannot round-trip.
+  return [start, end].every((at) =>
+    new Date(at.getFullYear(), at.getMonth(), at.getDate(), at.getHours(), at.getMinutes()).getTime() === at.getTime(),
+  )
+}
+
 describe('tz conversion properties', () => {
+  it.each([
+    ['Pacific/Auckland', '2032-04-04T00:00', '2032-04-04T23:01'],
+    ['America/New_York', '2020-10-31T06:01Z', '2020-11-01T06:00Z'],
+    ['Pacific/Auckland', '2023-09-23T07:00Z', '2023-09-24T06:01Z'],
+  ])('identifies the unrepresentable CI counterexample in %s (%s to %s)', (tz, start, end) => {
+    process.env.TZ = tz!
+    expect(isLosslessSpan(new Date(start!), new Date(end!))).toBe(false)
+  })
+
   it.each(ZONES)('emits well-formed UTC fields in %s', (tz) => {
     process.env.TZ = tz
     fc.assert(
@@ -48,6 +70,7 @@ describe('tz conversion properties', () => {
           // an overnight shift ends on the next day; that wall-clock time must exist too
           const endDay = s.end <= s.start ? iso(addDays(parseISO(s.date), 1)) : s.date
           fc.pre(existsLocally(endDay, s.end))
+          fc.pre(isLosslessSpan(new Date(`${s.date}T${s.start}`), new Date(`${endDay}T${s.end}`)))
           expect(toLocalShift(toUtcInput(s))).toEqual({ ...s, note: undefined })
         },
       ),
@@ -61,6 +84,10 @@ describe('tz conversion properties', () => {
       fc.property(
         shift.filter((s) => s.start !== s.end),
         (s) => {
+          const start = new Date(`${s.date}T${s.start}Z`)
+          const end = new Date(`${s.date}T${s.end}Z`)
+          if (end <= start) end.setUTCDate(end.getUTCDate() + 1)
+          fc.pre(isLosslessSpan(start, end))
           const local = toLocalShift(s)
           const endDay = local.end <= local.start ? iso(addDays(parseISO(local.date), 1)) : local.date
           fc.pre(existsLocally(local.date, local.start) && existsLocally(endDay, local.end))
