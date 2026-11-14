@@ -97,7 +97,7 @@
 
     <!-- Create/Edit Group Dialog -->
     <Drawer v-model:open="showCreateDialog">
-      <DrawerContent>
+      <DrawerContent :initial-focus="false">
         <DrawerTitle class="px-4 pt-4">{{ editingGroup ? 'Редактировать группу' : 'Создать группу' }}</DrawerTitle>
         <DrawerDescription class="sr-only">Форма создания группы</DrawerDescription>
         

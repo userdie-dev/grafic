@@ -68,7 +68,10 @@
 
     <!-- Create/Edit Preset Dialog -->
     <Drawer v-model:open="showCreateDialog">
-      <DrawerContent class="max-h-[90vh]">
+      <DrawerContent
+        :initial-focus="false"
+        class="h-auto data-[swipe-direction=down]:mt-0 data-[swipe-direction=down]:max-h-[95dvh] pb-[max(1rem,env(safe-area-inset-bottom))]"
+      >
         <DrawerTitle class="px-4 pt-4">{{ editingPreset ? 'Редактировать пресет' : 'Создать пресет' }}</DrawerTitle>
         <DrawerDescription class="sr-only">Форма создания пресета</DrawerDescription>
         
