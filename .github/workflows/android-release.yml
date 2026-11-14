@@ -39,7 +39,7 @@ jobs:
       - name: Build web app
         run: npm run build-only
         env:
-          VITE_API_URL: https://userdie-dev-grafic-2a8e.twc1.net
+          VITE_API_URL: https://grafic-seven.vercel.app/
           BUILD_ID: build-${{ github.run_number }}
 
       - name: Sync Capacitor

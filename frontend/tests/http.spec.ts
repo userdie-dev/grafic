@@ -42,10 +42,10 @@ describe('axios config', () => {
     await expect(http.get('/subscriptions')).rejects.toThrow('Сервер вернул страницу вместо данных')
   })
 
-  it('defaults the API url to localhost:3000', async () => {
+  it('defaults the API url to the production backend', async () => {
     vi.stubEnv('VITE_API_URL', undefined)
     const { API_URL } = await load()
-    expect(API_URL).toBe('http://localhost:3000')
+    expect(API_URL).toBe('https://grafic-seven.vercel.app/')
   })
 
   it('uses VITE_API_URL when set', async () => {
