@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import pg from 'pg';
 import { DatabaseModule } from './database/database.module.js';
 import { DevicesModule } from './devices/devices.module.js';
 import { Shift } from './entities/shift.entity.js';
@@ -19,6 +20,9 @@ const getDatabaseConfig = () => {
     console.log('Using PostgreSQL from DATABASE_URL');
     return {
       type: 'postgres' as const,
+      // Make the driver visible to serverless dependency tracing and avoid
+      // TypeORM's dynamic require('pg') in the deployed function.
+      driver: pg,
       url: process.env.DATABASE_URL,
       entities: [User, Shift, Subscription],
       synchronize: true,
