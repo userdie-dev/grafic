@@ -1,3 +1,18 @@
 {
-  "version": 2
+  "version": 2,
+  "functions": {
+    "backend/api/**/*.ts": {
+      "runtime": "@vercel/node@latest"
+    }
+  },
+  "routes": [
+    {
+      "src": "/health",
+      "dest": "backend/api/health.ts"
+    },
+    {
+      "src": "/test-simple",
+      "dest": "backend/api/test-simple.ts"
+    }
+  ]
 }
