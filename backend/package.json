@@ -8,8 +8,7 @@
     "build": "nest build",
     "start": "node dist/main",
     "start:dev": "nest start --watch",
-    "test:cov": "vitest run --coverage",
-    "postinstall": "prisma generate"
+    "test:cov": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
