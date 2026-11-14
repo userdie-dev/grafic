@@ -75,12 +75,12 @@
         <form class="space-y-4 overflow-y-auto p-4" @submit="onSubmit">
           <div class="space-y-2">
             <label class="block text-sm font-medium">Название</label>
-            <Input v-model="presetForm.label" placeholder="Например: Моя смена" required />
+            <Input v-model="label" placeholder="Например: Моя смена" required />
           </div>
 
           <div class="space-y-2">
             <label class="block text-sm font-medium">Описание</label>
-            <Input v-model="presetForm.hint" placeholder="Краткое описание (необязательно)" />
+            <Input v-model="hint" placeholder="Краткое описание (необязательно)" />
           </div>
 
           <div class="space-y-2">
@@ -92,9 +92,9 @@
                 type="button"
                 size="sm"
                 variant="secondary"
-                :class="presetForm.ruleType === type.id ? 'bg-primary text-primary-foreground' : ''"
+                :class="ruleType === type.id ? 'bg-primary text-primary-foreground' : ''"
                 class="rounded-full"
-                @click="presetForm.ruleType = type.id"
+                @click="ruleType = type.id"
               >
                 {{ type.label }}
               </Button>
@@ -102,19 +102,19 @@
           </div>
 
           <!-- Cycle rule parameters -->
-          <div v-if="presetForm.ruleType === 'cycle'" class="flex gap-2">
+          <div v-if="ruleType === 'cycle'" class="flex gap-2">
             <div class="flex-1 space-y-2">
               <label class="block text-xs font-medium text-muted-foreground">Рабочих дней</label>
-              <Input v-model.number="presetForm.cycleWork" type="number" min="1" max="30" required />
+              <Input v-model.number="cycleWork" type="number" min="1" max="30" required />
             </div>
             <div class="flex-1 space-y-2">
               <label class="block text-xs font-medium text-muted-foreground">Выходных дней</label>
-              <Input v-model.number="presetForm.cycleOff" type="number" min="1" max="30" required />
+              <Input v-model.number="cycleOff" type="number" min="1" max="30" required />
             </div>
           </div>
 
           <!-- Weekdays rule parameters -->
-          <div v-if="presetForm.ruleType === 'weekdays'" class="space-y-2">
+          <div v-if="ruleType === 'weekdays'" class="space-y-2">
             <label class="block text-sm font-medium">Рабочие дни недели</label>
             <div class="flex flex-wrap gap-2">
               <Button
@@ -123,7 +123,7 @@
                 type="button"
                 size="sm"
                 variant="secondary"
-                :class="presetForm.weekdays.includes(index) ? 'bg-primary text-primary-foreground' : ''"
+                :class="weekdays.includes(index) ? 'bg-primary text-primary-foreground' : ''"
                 class="rounded-full"
                 @click="toggleWeekday(index)"
               >
@@ -136,10 +136,10 @@
             <label class="block text-sm font-medium">Время смены</label>
             <div class="flex gap-2">
               <div class="flex-1">
-                <TimePicker v-model="presetForm.dayStart" title="Начало" />
+                <TimePicker v-model="dayStart" title="Начало" />
               </div>
               <div class="flex-1">
-                <TimePicker v-model="presetForm.dayEnd" title="Конец" :allow-next-day="true" />
+                <TimePicker v-model="dayEnd" title="Конец" :allow-next-day="true" />
               </div>
             </div>
           </div>
@@ -195,14 +195,25 @@ const showCreateDialog = ref(false)
 const editingPreset = ref<Preset | null>(null)
 const formError = ref('')
 
-const { handleSubmit, values: presetForm, setValues, resetForm } = useFormSchema(presetFormSchema, presetFormDefaults)
+const { handleSubmit, defineField, setValues, resetForm, setFieldValue } = useFormSchema(presetFormSchema, presetFormDefaults)
+
+const [label] = defineField('label')
+const [hint] = defineField('hint')
+const [ruleType] = defineField('ruleType')
+const [cycleWork] = defineField('cycleWork')
+const [cycleOff] = defineField('cycleOff')
+const [weekdays] = defineField('weekdays')
+const [dayStart] = defineField('dayStart')
+const [dayEnd] = defineField('dayEnd')
 
 function toggleWeekday(day: number) {
-  const index = presetForm.weekdays.indexOf(day)
+  const index = weekdays.value.indexOf(day)
   if (index === -1) {
-    presetForm.weekdays.push(day)
+    setFieldValue('weekdays', [...weekdays.value, day])
   } else {
-    presetForm.weekdays.splice(index, 1)
+    const newWeekdays = [...weekdays.value]
+    newWeekdays.splice(index, 1)
+    setFieldValue('weekdays', newWeekdays)
   }
 }
 

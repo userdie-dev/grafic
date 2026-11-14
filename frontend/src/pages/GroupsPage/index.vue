@@ -104,20 +104,20 @@
         <form class="space-y-4 p-4" @submit="onSubmit">
           <div class="space-y-2">
             <label class="block text-sm font-medium">Название группы</label>
-            <Input v-model="groupForm.name" placeholder="Например: Работа, Семья" required />
+            <Input v-model="name" placeholder="Например: Работа, Семья" required />
           </div>
           
           <div class="space-y-2">
             <label class="block text-sm font-medium">Цвет</label>
             <div class="flex flex-wrap justify-center gap-3 pt-2">
               <button
-                v-for="color in COLORS"
-                :key="color"
+                v-for="c in COLORS"
+                :key="c"
                 type="button"
                 class="size-12 rounded-full transition-transform active:scale-90"
-                :class="groupForm.color === color ? 'ring-2 ring-primary ring-offset-2' : ''"
-                :style="{ background: color }"
-                @click="groupForm.color = color"
+                :class="color === c ? 'ring-2 ring-primary ring-offset-2' : ''"
+                :style="{ background: c }"
+                @click="color = c"
               />
             </div>
           </div>
@@ -190,7 +190,10 @@ const showAddMemberDialog = ref(false)
 const editingGroup = ref<Group | null>(null)
 const selectedGroupForMember = ref<Group | null>(null)
 
-const { handleSubmit, values: groupForm, setValues, resetForm } = useFormSchema(groupFormSchema, groupFormDefaults)
+const { handleSubmit, defineField, setValues, resetForm } = useFormSchema(groupFormSchema, groupFormDefaults)
+
+const [name] = defineField('name')
+const [color] = defineField('color')
 
 const availablePeople = computed(() => {
   if (!selectedGroupForMember.value) return []

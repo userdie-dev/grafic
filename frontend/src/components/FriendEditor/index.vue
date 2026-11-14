@@ -8,7 +8,7 @@
       }}</DrawerDescription>
 
       <form class="space-y-4 px-1" @submit="onSubmit">
-        <Input v-if="!isMe" v-model="formValues.name" maxlength="30" placeholder="Имя" aria-label="Имя" class="h-10" />
+        <Input v-if="!isMe" v-model="name" maxlength="30" placeholder="Имя" aria-label="Имя" class="h-10" />
 
         <div class="flex flex-wrap gap-2.5" role="radiogroup" aria-label="Цвет">
           <button
@@ -16,16 +16,16 @@
             :key="c"
             type="button"
             role="radio"
-            :aria-checked="!pickerOpen && formValues.color === c"
+            :aria-checked="!pickerOpen && color === c"
             :aria-label="c"
             class="size-8 rounded-full ring-offset-2 ring-offset-background transition active:scale-90"
-            :class="!pickerOpen && formValues.color === c ? 'ring-2 ring-foreground' : ''"
+            :class="!pickerOpen && color === c ? 'ring-2 ring-foreground' : ''"
             :style="{ background: c }"
             @click="pickPreset(c)"
           />
 
           <!-- the palette is the last option: an arbitrary colour in a popover -->
-          <ColorPicker v-model="formValues.color" v-model:open="pickerOpen" :checked="pickerOpen" @update:model-value="onCustom" />
+          <ColorPicker v-model="color" v-model:open="pickerOpen" :checked="pickerOpen" @update:model-value="onCustom" />
         </div>
 
         <button
@@ -73,14 +73,17 @@ const { open, close, onOpenChange } = useDrawerClose(editor.close)
 
 const isMe = person.id === ME
 
-const { handleSubmit, values: formValues } = useFormSchemaWithValues(friendFormSchema, {
+const { handleSubmit, setFieldValue, defineField } = useFormSchemaWithValues(friendFormSchema, {
   name: person.name,
   color: person.color,
 })
+
+const [name] = defineField('name')
+const [color] = defineField('color')
 const pickerOpen = ref(false)
 
 function pickPreset(c: string) {
-  formValues.color = c
+  setFieldValue('color', c)
   pickerOpen.value = false
 }
 
@@ -113,4 +116,5 @@ function askRemove() {
   editor.remove()
   close()
 }
+
 </script>

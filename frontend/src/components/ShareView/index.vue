@@ -27,8 +27,8 @@
       </CardHeader>
       <CardContent>
         <form class="space-y-2" @submit="onSubmit">
-          <Input v-model="friendForm.code" :maxlength="CODE_MAX" placeholder="Код" class="h-10 tracking-widest" />
-          <Input v-model="friendForm.label" maxlength="30" placeholder="Имя" class="h-10" />
+          <Input v-model="code" :maxlength="CODE_MAX" placeholder="Код" class="h-10 tracking-widest" />
+          <Input v-model="label" maxlength="30" placeholder="Имя" class="h-10" />
           <Button size="lg" class="h-10 w-full" :disabled="!valid">
             <RiUserAddLine /> Добавить
           </Button>
@@ -75,10 +75,13 @@ function askRegenerate() {
   confirmTimer = setTimeout(() => (confirming.value = false), 4000)
 }
 
-const { handleSubmit, values: friendForm, resetForm } = useFormSchema(addFriendSchema, addFriendDefaults)
+const { handleSubmit, defineField, resetForm } = useFormSchema(addFriendSchema, addFriendDefaults)
+
+const [code] = defineField('code')
+const [label] = defineField('label')
 
 const valid = computed(() => 
-  friendForm.code.trim().length >= CODE_MIN && friendForm.code.trim().length <= CODE_MAX
+  code.value.trim().length >= CODE_MIN && code.value.trim().length <= CODE_MAX
 )
 
 const onSubmit = handleSubmit(async (values) => {
