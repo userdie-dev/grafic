@@ -49,7 +49,7 @@
     <Input v-model="note" maxlength="200" placeholder="Заметка" class="h-10" />
     <p v-if="problem" class="text-sm text-destructive">{{ problem }}</p>
     <div class="flex gap-2 pt-2">
-      <Button size="lg" :class="PRIMARY_BLUE" class="h-11 flex-1 rounded-full">Сохранить</Button>
+      <Button type="submit" size="lg" :disabled="saving" :class="PRIMARY_BLUE" class="h-11 flex-1 rounded-full">{{ saving ? 'Сохранение…' : 'Сохранить' }}</Button>
       <Button type="button" variant="outline" size="lg" class="h-11 rounded-full" @click="emit('done')">Отмена</Button>
     </div>
   </form>
@@ -88,6 +88,7 @@ const start = ref(props.editing?.start ?? '09:00')
 const end = ref(props.editing?.end ?? '18:00')
 const note = ref(props.editing?.note ?? '')
 const problem = ref('')
+const saving = ref(false)
 
 const isOnce = computed(() => preset.value.rule.type === 'once')
 const isWeekly = computed(() => preset.value.rule.type === 'weekly')
@@ -155,7 +156,9 @@ function buildItems(): ShiftInput[] | null {
   return items
 }
 
-function submit() {
+async function submit() {
+  if (saving.value) return
+  problem.value = ''
   if (!start.value || !end.value) {
     problem.value = 'Укажите время'
     return
@@ -176,7 +179,14 @@ function submit() {
     removeIds = [props.editing.id]
   }
   
-  editor.save(items, removeIds)
-  emit('done')
+  saving.value = true
+  try {
+    await editor.save(items, removeIds)
+    emit('done')
+  } catch (error) {
+    problem.value = error instanceof Error ? error.message : 'Не удалось сохранить смены. Попробуйте ещё раз.'
+  } finally {
+    saving.value = false
+  }
 }
 </script>

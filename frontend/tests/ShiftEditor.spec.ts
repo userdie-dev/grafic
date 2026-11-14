@@ -195,6 +195,33 @@ describe('editing an existing shift', () => {
 })
 
 describe('adding shifts', () => {
+  it('keeps the form and entered data after a failed save, then allows retrying', async () => {
+    await mountEditor()
+    await openAdd()
+    await input(inputs().find((i) => i.placeholder === 'Заметка')!, 'Склад')
+    editor.save.mockRejectedValueOnce(new Error('Не удалось сохранить'))
+    await click(btn('Сохранить'))
+    expect(body().textContent).toContain('Не удалось сохранить')
+    expect(inputs().find((i) => i.placeholder === 'Заметка')!.value).toBe('Склад')
+    await click(btn('Сохранить'))
+    expect(editor.save).toHaveBeenCalledTimes(2)
+    expect(body().querySelector('form')).toBeNull()
+  })
+
+  it('waits for saving and prevents duplicate submissions', async () => {
+    await mountEditor()
+    await openAdd()
+    let finish!: () => void
+    editor.save.mockReturnValueOnce(new Promise<void>((resolve) => { finish = resolve }))
+    await click(btn('Сохранить'))
+    expect(btn('Сохранение…').disabled).toBe(true)
+    await submit()
+    expect(editor.save).toHaveBeenCalledTimes(1)
+    finish()
+    await flushPromises()
+    expect(body().querySelector('form')).toBeNull()
+  })
+
   it('saves an edited end time', async () => {
     await mountEditor()
     await openAdd()

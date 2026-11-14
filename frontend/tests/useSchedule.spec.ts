@@ -279,6 +279,22 @@ describe('useSchedule', () => {
     expect(vi.mocked(api.myShifts).mock.calls.length).toBeGreaterThan(1)
   })
 
+  it('waits for the pending device registration before saving shifts', async () => {
+    let finish!: (value: typeof device) => void
+    vi.mocked(registerDevice).mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
+    const store = useScheduleStore()
+    const registration = store.ensureDevice()
+    const { result } = setup(useSchedule)
+    const items = [{ date: '2030-01-07', start: '09:00', end: '18:00' }]
+    const saving = result.saveShifts(items)
+    await flushPromises()
+    expect(registerDevice).toHaveBeenCalledTimes(1)
+    expect(api.saveShifts).not.toHaveBeenCalled()
+    finish(device)
+    await Promise.all([registration, saving])
+    expect(api.saveShifts).toHaveBeenCalledWith(items)
+  })
+
   it('deletes a single shift', async () => {
     withDevice()
     const { result } = setup(useSchedule)

@@ -80,11 +80,15 @@ export const useScheduleStore = defineStore('schedule', () => {
   const month = computed(() => parseISO(state.value.month))
 
   /** Registers this device on first run. */
+  let registering: Promise<void> | undefined
   async function ensureDevice() {
     if (state.value.device) return
-    const device = await registerDevice()
-    setToken(device.token)
-    state.value.device = device
+    registering ??= (async () => {
+      const device = await registerDevice()
+      setToken(device.token)
+      state.value.device = device
+    })().finally(() => (registering = undefined))
+    await registering
   }
 
   let reregistering: Promise<void> | undefined

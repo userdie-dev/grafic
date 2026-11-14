@@ -182,6 +182,7 @@ export function useSchedule() {
   const invalidateMine = () => qc.invalidateQueries({ queryKey: ['shifts', ME] })
   const save = useMutation({
     mutationFn: async ({ items, removeIds }: { items: ShiftInput[]; removeIds: string[] }) => {
+      await store.ensureDevice()
       await Promise.all(removeIds.map((id) => api.deleteShift(id)))
       if (items.length) await api.saveShifts(items)
     },
@@ -229,7 +230,7 @@ export function useSchedule() {
     toggle: store.toggle,
     rename: store.rename,
     setColor: store.setColor,
-    saveShifts: (items: ShiftInput[], removeIds: string[] = []) => save.mutate({ items, removeIds }),
+    saveShifts: (items: ShiftInput[], removeIds: string[] = []) => save.mutateAsync({ items, removeIds }),
     deleteShift: (id: string) => remove.mutate(id),
     addFriend: async (code: string, label: string) => {
       try {
