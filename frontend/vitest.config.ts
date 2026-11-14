@@ -11,6 +11,7 @@ export default defineConfig({
     globals: true,
     testTimeout: 30000,
     include: ['tests/**/*.spec.ts'],
+    exclude: ['tests/contract.spec.ts'], // integration тесты с production API - skip из-за rate limit
     setupFiles: ['tests/setup.ts'],
     coverage: {
       provider: 'v8',
