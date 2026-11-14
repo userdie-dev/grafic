@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "NodeNext",
     "target": "ES2022",
     "outDir": "./dist",
     "rootDir": "./src",
@@ -14,7 +14,8 @@
     "skipLibCheck": true,
     "types": ["node"],
     "strict": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+    "moduleResolution": "NodeNext"
   },
   "include": ["src"]
 }

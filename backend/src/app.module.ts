@@ -3,14 +3,14 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DatabaseModule } from './database/database.module';
-import { DevicesModule } from './devices/devices.module';
-import { Shift } from './entities/shift.entity';
-import { Subscription } from './entities/subscription.entity';
-import { User } from './entities/user.entity';
-import { EventsModule } from './events/events.module';
-import { ShiftsModule } from './shifts/shifts.module';
-import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { DatabaseModule } from './database/database.module.js';
+import { DevicesModule } from './devices/devices.module.js';
+import { Shift } from './entities/shift.entity.js';
+import { Subscription } from './entities/subscription.entity.js';
+import { User } from './entities/user.entity.js';
+import { EventsModule } from './events/events.module.js';
+import { ShiftsModule } from './shifts/shifts.module.js';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module.js';
 
 // Database configuration based on environment
 const getDatabaseConfig = () => {

@@ -4,7 +4,7 @@ NestJS API для приложения управления сменами.
 
 ## Требования
 
-- Node.js 18+
+- Node.js 24.x
 - npm или pnpm
 
 ## Установка
@@ -106,6 +106,16 @@ backend/
 ```
 
 ## Production Deployment
+
+### Vercel
+
+- Root Directory: `backend`.
+- Node.js Version: `24.x` (также задана в `package.json`).
+- Задайте `DATABASE_URL` для нужного окружения Vercel.
+- После изменения настроек выполните Redeploy.
+
+Бэкенд использует ESM (`type: module`, TypeScript `NodeNext`), как и NestJS 12.
+Node.js 24 также нужен для CommonJS-зависимостей, загружающих ESM через `require()`.
 
 Для production нужна PostgreSQL база данных (Supabase, Neon, Railway и т.п.).
 

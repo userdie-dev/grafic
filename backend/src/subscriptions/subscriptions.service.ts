@@ -1,9 +1,9 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Subscription } from '../entities/subscription.entity';
-import { User } from '../entities/user.entity';
-import { ShiftsService } from '../shifts/shifts.service';
+import { Subscription } from '../entities/subscription.entity.js';
+import { User } from '../entities/user.entity.js';
+import { ShiftsService } from '../shifts/shifts.service.js';
 
 @Injectable()
 export class SubscriptionsService {

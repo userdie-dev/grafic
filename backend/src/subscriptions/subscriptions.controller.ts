@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { IsString, Length } from 'class-validator';
-import { CurrentUser, DeviceAuthGuard } from '../devices/device-auth.guard';
-import { User } from '../entities/user.entity';
-import { SubscriptionsService } from './subscriptions.service';
+import { CurrentUser, DeviceAuthGuard } from '../devices/device-auth.guard.js';
+import { User } from '../entities/user.entity.js';
+import { SubscriptionsService } from './subscriptions.service.js';
 
 class SubscribeDto {
   @IsString()

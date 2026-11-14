@@ -47,7 +47,7 @@ npm run dev
 
 ### Требования
 
-- Node.js 18+
+- Node.js 24.x
 - npm или pnpm
 
 ### Backend

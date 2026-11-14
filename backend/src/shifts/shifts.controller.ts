@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
-import { DeviceAuthGuard, CurrentUser } from '../devices/device-auth.guard';
-import { User } from '../entities/user.entity';
-import { UpsertShiftsDto } from './shifts.dto';
-import { ShiftsService } from './shifts.service';
+import { DeviceAuthGuard, CurrentUser } from '../devices/device-auth.guard.js';
+import { User } from '../entities/user.entity.js';
+import { UpsertShiftsDto } from './shifts.dto.js';
+import { ShiftsService } from './shifts.service.js';
 
 @UseGuards(DeviceAuthGuard)
 @Controller('me/shifts')

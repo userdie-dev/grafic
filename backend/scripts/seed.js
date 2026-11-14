@@ -1,7 +1,7 @@
 // Mock data: a demo "me" user, three friends with shifts and subscriptions.
 // Usage: node scripts/seed.js   (backend must have run once so tables exist)
-const Database = require('better-sqlite3');
-const { createHash, randomUUID } = require('crypto');
+import Database from 'better-sqlite3';
+import { createHash, randomUUID } from 'node:crypto';
 
 const db = new Database(process.env.DB_PATH ?? 'grafic.sqlite');
 const hash = (t) => createHash('sha256').update(t).digest('hex');

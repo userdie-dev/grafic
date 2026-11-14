@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { isValid, parseISO } from 'date-fns';
-import { keyBy, uniq } from 'lodash';
+import keyBy from 'lodash/keyBy.js';
+import uniq from 'lodash/uniq.js';
 import { Between, Repository } from 'typeorm';
-import { EventsService } from '../events/events.service';
-import { Shift } from '../entities/shift.entity';
-import { Subscription } from '../entities/subscription.entity';
-import { ShiftDto } from './shifts.dto';
+import { EventsService } from '../events/events.service.js';
+import { Shift } from '../entities/shift.entity.js';
+import { Subscription } from '../entities/subscription.entity.js';
+import { ShiftDto } from './shifts.dto.js';
 
 const key = (s: { date: string; start: string }) => `${s.date}|${s.start}`;
 

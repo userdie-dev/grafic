@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DevicesModule } from '../devices/devices.module';
-import { Subscription } from '../entities/subscription.entity';
-import { User } from '../entities/user.entity';
-import { ShiftsModule } from '../shifts/shifts.module';
-import { SubscriptionsController } from './subscriptions.controller';
-import { SubscriptionsService } from './subscriptions.service';
+import { DevicesModule } from '../devices/devices.module.js';
+import { Subscription } from '../entities/subscription.entity.js';
+import { User } from '../entities/user.entity.js';
+import { ShiftsModule } from '../shifts/shifts.module.js';
+import { SubscriptionsController } from './subscriptions.controller.js';
+import { SubscriptionsService } from './subscriptions.service.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Subscription, User]), DevicesModule, ShiftsModule],

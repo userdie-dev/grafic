@@ -1,9 +1,9 @@
 import { Controller, Sse, UseGuards } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Observable, map } from 'rxjs';
-import { CurrentUser, DeviceAuthGuard } from '../devices/device-auth.guard';
-import { User } from '../entities/user.entity';
-import { EventsService } from './events.service';
+import { CurrentUser, DeviceAuthGuard } from '../devices/device-auth.guard.js';
+import { User } from '../entities/user.entity.js';
+import { EventsService } from './events.service.js';
 
 @Controller()
 export class EventsController {

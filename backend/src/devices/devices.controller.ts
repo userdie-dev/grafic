@@ -1,8 +1,8 @@
 import { Controller, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { User } from '../entities/user.entity';
-import { CurrentUser, DeviceAuthGuard } from './device-auth.guard';
-import { DevicesService } from './devices.service';
+import { User } from '../entities/user.entity.js';
+import { CurrentUser, DeviceAuthGuard } from './device-auth.guard.js';
+import { DevicesService } from './devices.service.js';
 
 @Controller()
 export class DevicesController {

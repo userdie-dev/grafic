@@ -5,8 +5,8 @@ import {
   UnauthorizedException,
   createParamDecorator,
 } from '@nestjs/common';
-import { User } from '../entities/user.entity';
-import { DevicesService } from './devices.service';
+import { User } from '../entities/user.entity.js';
+import { DevicesService } from './devices.service.js';
 
 @Injectable()
 export class DeviceAuthGuard implements CanActivate {
