@@ -11,8 +11,8 @@
       "dest": "backend/api/health.ts"
     },
     {
-      "src": "/test-simple",
-      "dest": "backend/api/test-simple.ts"
+      "src": "/neon",
+      "dest": "backend/api/neon.ts"
     }
   ]
 }
