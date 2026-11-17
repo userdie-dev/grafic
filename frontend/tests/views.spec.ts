@@ -123,7 +123,7 @@ describe('ShareView', () => {
     expect(h.s.addFriend).not.toHaveBeenCalled()
   })
 
-  it.skip('adds a friend and clears the fields on success only', async () => {
+  it('adds a friend and clears the fields on success only', async () => {
     const w = mount(ShareView)
     await flushPromises()
     const [code, label] = w.findAll('input')
@@ -131,11 +131,9 @@ describe('ShareView', () => {
     await label!.setValue('Боря')
     await nextTick()
     await flushPromises()
-    // Найдём кнопку "Добавить" и кликнем на неё
-    const submitBtn = w.findAll('button').find(b => b.text().includes('Добавить'))!
-    await submitBtn.trigger('click')
-    await flushPromises()
-    expect(h.s.addFriend).toHaveBeenCalledWith('ABCD', 'Боря')
+    await w.get('form').trigger('submit')
+    await vi.waitFor(() => expect(h.s.addFriend).toHaveBeenCalledWith('ABCD', 'Боря'))
+    expect(useAppToast().value).toEqual({ kind: 'success', text: 'Друг добавлен' })
     expect((code!.element as HTMLInputElement).value).toBe('')
     expect((label!.element as HTMLInputElement).value).toBe('')
 
@@ -144,15 +142,14 @@ describe('ShareView', () => {
     await code!.setValue('WXYZ')
     await nextTick()
     await flushPromises()
-    await submitBtn.trigger('click')
-    await flushPromises()
+    await w.get('form').trigger('submit')
+    await vi.waitFor(() => expect(h.s.addFriend).toHaveBeenCalledTimes(2))
     expect((code!.element as HTMLInputElement).value).toBe('WXYZ')
     expect(appToast.value).toEqual({ kind: 'error', text: 'Не удалось добавить друга. Проверьте код' })
 
     h.s.error = 'Cannot subscribe to yourself'
-    await submitBtn.trigger('click')
-    await flushPromises()
-    expect(appToast.value).toEqual({ kind: 'error', text: 'Это ваш собственный код' })
+    await w.get('form').trigger('submit')
+    await vi.waitFor(() => expect(appToast.value).toEqual({ kind: 'error', text: 'Это ваш собственный код' }))
   })
 })
 

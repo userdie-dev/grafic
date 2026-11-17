@@ -87,6 +87,7 @@ const valid = computed(() =>
 const onSubmit = handleSubmit(async (values) => {
   if (!valid.value) return
   if (await s.addFriend(values.code, values.label)) {
+    showAppToast('Друг добавлен', 'success')
     resetForm()
     return
   }

@@ -84,6 +84,28 @@ const withDevice = () => {
 }
 
 describe('useSchedule', () => {
+  it('keeps grouped people available with their names and colors in multiple groups', async () => {
+    withDevice()
+    vi.mocked(api.subscriptions).mockResolvedValue([{ id: 's1', ownerId: 'o1' }])
+    const store = useScheduleStore()
+    store.state.colors.o1 = '#123456'
+    store.state.groups = [
+      { id: 'g1', name: 'Работа', color: '#111', memberIds: [] },
+      { id: 'g2', name: 'Друзья', color: '#222', memberIds: [] },
+    ]
+    const { result, wrapper } = setup(useSchedule)
+    await flushPromises()
+    store.addGroupMember('g1', 'o1')
+    store.addGroupMember('g2', 'o1')
+    store.addGroupMember('g1', 'g2')
+    expect(store.state.groups.map(g => g.memberIds)).toEqual([['o1'], ['o1']])
+    expect(result.allPeople.find(p => p.id === 'o1')).toMatchObject({ name: 'Аня', color: '#123456' })
+    expect(result.allPeople.some(p => p.id === 'g1')).toBe(false)
+    expect(result.people.some(p => p.id === 'o1')).toBe(false)
+    expect(result.people.filter(p => p.isGroup).map(p => p.id)).toEqual(['g1', 'g2'])
+    wrapper.unmount()
+  })
+
   it('does not query before a device exists', async () => {
     const { result } = setup(useSchedule)
     await flushPromises()

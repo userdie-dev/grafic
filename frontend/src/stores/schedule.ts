@@ -137,6 +137,7 @@ export const useScheduleStore = defineStore('schedule', () => {
       )
     },
     addGroupMember: (groupId: string, memberId: string) => {
+      if (state.value.groups.some(g => g.id === memberId)) return
       state.value.groups = state.value.groups.map((g) => 
         g.id === groupId && !g.memberIds.includes(memberId)
           ? { ...g, memberIds: [...g.memberIds, memberId] }

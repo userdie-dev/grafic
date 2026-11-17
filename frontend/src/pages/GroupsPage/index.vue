@@ -171,7 +171,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { RiAddLine, RiCloseLine, RiDeleteBinLine, RiEditLine } from '@remixicon/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -198,15 +198,15 @@ const [color] = defineField('color')
 const availablePeople = computed(() => {
   if (!selectedGroupForMember.value) return []
   const group = selectedGroupForMember.value
-  return s.people.filter(p => p.id !== 'me' && !group.memberIds.includes(p.id))
+  return s.allPeople.filter(p => p.id !== 'me' && !group.memberIds.includes(p.id))
 })
 
 function getMemberName(id: string) {
-  return s.people.find(p => p.id === id)?.name ?? 'Неизвестный'
+  return s.allPeople.find(p => p.id === id)?.name ?? 'Неизвестный'
 }
 
 function getMemberColor(id: string) {
-  return s.people.find(p => p.id === id)?.color ?? '#999'
+  return s.allPeople.find(p => p.id === id)?.color ?? '#999'
 }
 
 function editGroup(group: Group) {

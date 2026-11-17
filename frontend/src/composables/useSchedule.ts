@@ -58,15 +58,11 @@ export function useSchedule() {
     ? MOCK_FRIENDS.map((f) => ({ id: f.id, name: store.state.labels[f.id] ?? f.name, subId: '' }))
     : []
 
-  // People list: individual people + groups (members of groups are hidden from individual display)
-  const people = computed(() => {
-    const groups = store.state.groups
-    const groupMemberIds = new Set(groups.flatMap(g => g.memberIds))
-    
-    const individuals = [
+  // Include grouped people when managing membership and looking up their details.
+  const allPeople = computed(() => {
+    return [
       { id: ME, name: 'Я', color: store.state.colors[ME] ?? COLORS[0]!, subId: '', isGroup: false },
       ...subs.value
-        .filter(s => !groupMemberIds.has(s.ownerId)) // Exclude people who are in groups
         .map((s, i) => ({
           id: s.ownerId,
           name: store.state.labels[s.ownerId] ?? 'Друг',
@@ -75,7 +71,6 @@ export function useSchedule() {
           isGroup: false,
         })),
       ...mockPeople
-        .filter(m => !groupMemberIds.has(m.id))
         .map((m, i) => ({ 
           ...m, 
           color: COLORS[(subs.value.length + i + 1) % COLORS.length]!,
@@ -83,6 +78,13 @@ export function useSchedule() {
         })),
     ]
     
+  })
+
+  // Calendar entries hide individual members and show their groups instead.
+  const people = computed(() => {
+    const groups = store.state.groups
+    const groupMemberIds = new Set(groups.flatMap(g => g.memberIds))
+    const individuals = allPeople.value.filter(p => p.id === ME || !groupMemberIds.has(p.id))
     const groupEntries = groups.map(g => ({
       id: g.id,
       name: g.name,
@@ -218,6 +220,7 @@ export function useSchedule() {
     shareCode: computed(() => store.state.device?.shareCode ?? ''),
     loading: computed(() => mineQuery.isFetching.value || subsQuery.isFetching.value),
     people,
+    allPeople,
     byDate,
     commonOff,
     commonFreeDays,
