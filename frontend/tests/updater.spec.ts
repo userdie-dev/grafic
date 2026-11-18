@@ -7,7 +7,10 @@ const cap = vi.hoisted(() => ({ native: true }))
 const upd = vi.hoisted(() => ({ notifyAppReady: vi.fn(), download: vi.fn(), set: vi.fn(), list: vi.fn(), current: vi.fn(), delete: vi.fn() }))
 const http = vi.hoisted(() => ({ get: vi.fn() }))
 
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => cap.native }, CapacitorHttp: http }))
+vi.mock('@capacitor/core', async (original) => {
+  const core = await original<typeof import('@capacitor/core')>()
+  return { ...core, Capacitor: { ...core.Capacitor, isNativePlatform: () => cap.native }, CapacitorHttp: http }
+})
 vi.mock('@capgo/capacitor-updater', () => ({ CapacitorUpdater: upd }))
 vi.mock('@/lib/api', () => ({
   registerDevice: vi.fn().mockResolvedValue({ userId: 'u', token: 't', shareCode: 'ABC234' }),

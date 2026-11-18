@@ -13,7 +13,10 @@ const ln = vi.hoisted(() => ({
   schedule: vi.fn(),
 }))
 
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => cap.native } }))
+vi.mock('@capacitor/core', async (original) => {
+  const core = await original<typeof import('@capacitor/core')>()
+  return { ...core, Capacitor: { ...core.Capacitor, isNativePlatform: () => cap.native } }
+})
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: ln }))
 vi.mock('@/lib/api', () => ({
   registerDevice: vi.fn(),

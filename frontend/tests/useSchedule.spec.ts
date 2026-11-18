@@ -14,7 +14,7 @@ vi.mock('@/lib/api', () => ({
     subscriptions: vi.fn(),
     myShifts: vi.fn(),
     friendShifts: vi.fn(),
-    saveShifts: vi.fn(),
+    saveUtcShifts: vi.fn(),
     deleteShift: vi.fn(),
     subscribe: vi.fn(),
     unsubscribe: vi.fn(),
@@ -38,6 +38,7 @@ import { api, registerDevice } from '@/lib/api'
 import { COLORS, ME, useSchedule, useScheduleSync } from '@/composables/useSchedule'
 import { useConnection } from '@/composables/useConnection'
 import { useScheduleStore } from '@/stores/schedule'
+import { toUtcInput } from '@/lib/tz'
 
 const device = { userId: 'u1', token: 'tok', shareCode: 'ABC234' }
 const shift = (id: string, date: string, start: string) => ({ id, date, start, end: '18:00', note: null })
@@ -67,7 +68,7 @@ beforeEach(() => {
   vi.mocked(api.subscriptions).mockResolvedValue([])
   vi.mocked(api.myShifts).mockResolvedValue([])
   vi.mocked(api.friendShifts).mockResolvedValue([])
-  vi.mocked(api.saveShifts).mockResolvedValue([])
+  vi.mocked(api.saveUtcShifts).mockResolvedValue([])
   vi.mocked(api.deleteShift).mockResolvedValue({ deleted: true })
   vi.mocked(api.regenerateCode).mockResolvedValue({ shareCode: 'NEW222' })
   vi.mocked(api.unsubscribe).mockResolvedValue({ deleted: true })
@@ -129,7 +130,7 @@ describe('useSchedule', () => {
     const { result } = setup(useSchedule)
     await flushPromises()
 
-    expect(api.myShifts).toHaveBeenCalledWith('2029-12-30', '2030-02-04')
+    expect(api.myShifts).toHaveBeenCalledWith()
     expect(result.shareCode).toBe('ABC234')
     expect(result.month.getFullYear()).toBe(2030)
     expect(result.myShifts).toHaveLength(1)
@@ -283,6 +284,10 @@ describe('useSchedule', () => {
 
   it('saves: deletes replaced rows then upserts, and skips the upsert when empty', async () => {
     withDevice()
+    vi.mocked(api.myShifts).mockResolvedValue([
+      shift('old1', '2030-01-07', '05:00'),
+      shift('old2', '2030-01-07', '06:00'),
+    ])
     const { result } = setup(useSchedule)
     await flushPromises()
 
@@ -291,34 +296,36 @@ describe('useSchedule', () => {
     await flushPromises()
     expect(api.deleteShift).toHaveBeenCalledWith('old1')
     expect(api.deleteShift).toHaveBeenCalledWith('old2')
-    expect(api.saveShifts).toHaveBeenCalledWith(items)
+    expect(api.saveUtcShifts).toHaveBeenCalledWith(items.map(toUtcInput))
 
-    vi.mocked(api.saveShifts).mockClear()
-    result.saveShifts([])
+    vi.mocked(api.saveUtcShifts).mockClear()
+    await result.saveShifts([])
     await flushPromises()
-    expect(api.saveShifts).not.toHaveBeenCalled()
-    // my shifts are refetched after settling
-    expect(vi.mocked(api.myShifts).mock.calls.length).toBeGreaterThan(1)
+    expect(api.saveUtcShifts).not.toHaveBeenCalled()
   })
 
-  it('waits for the pending device registration before saving shifts', async () => {
+  it('saves locally while registration is pending and sends the shift once it completes', async () => {
     let finish!: (value: typeof device) => void
     vi.mocked(registerDevice).mockReturnValueOnce(new Promise((resolve) => { finish = resolve }))
     const store = useScheduleStore()
+    store.state.month = '2030-01-15'
     const registration = store.ensureDevice()
     const { result } = setup(useSchedule)
     const items = [{ date: '2030-01-07', start: '09:00', end: '18:00' }]
-    const saving = result.saveShifts(items)
+    await result.saveShifts(items)
     await flushPromises()
     expect(registerDevice).toHaveBeenCalledTimes(1)
-    expect(api.saveShifts).not.toHaveBeenCalled()
+    expect(api.saveUtcShifts).not.toHaveBeenCalled()
+    expect(result.myShifts).toEqual([expect.objectContaining(items[0]!)])
     finish(device)
-    await Promise.all([registration, saving])
-    expect(api.saveShifts).toHaveBeenCalledWith(items)
+    await registration
+    await flushPromises()
+    expect(api.saveUtcShifts).toHaveBeenCalledWith(items.map(toUtcInput))
   })
 
   it('deletes a single shift', async () => {
     withDevice()
+    vi.mocked(api.myShifts).mockResolvedValue([shift('x', '2030-01-07', '08:00')])
     const { result } = setup(useSchedule)
     await flushPromises()
     result.deleteShift('x')

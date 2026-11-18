@@ -1,4 +1,5 @@
 import { QueryClient, dehydrate, hydrate } from '@tanstack/vue-query'
+import { isAndroid } from '@/lib/syncService'
 
 const KEY = 'grafic.cache'
 const WEEK = 7 * 24 * 60 * 60 * 1000
@@ -24,7 +25,10 @@ export function createQueryClient(): QueryClient {
     clearTimeout(timer)
     timer = setTimeout(() => {
       try {
-        const state = dehydrate(client, { shouldDehydrateQuery: (q) => q.state.status === 'success' })
+        const state = dehydrate(client, {
+          shouldDehydrateQuery: (q) => q.state.status === 'success'
+            && !(isAndroid && q.queryKey[0] === 'shifts' && q.queryKey[1] === 'me'),
+        })
         localStorage.setItem(KEY, JSON.stringify(state))
       } catch {
         /* storage full or unavailable */

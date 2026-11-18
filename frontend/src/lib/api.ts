@@ -19,12 +19,17 @@ export const registerDevice = () => send<Device>("post", "/devices");
 const range = (from?: string, to?: string) =>
   from && to ? `?from=${from}&to=${to}` : "";
 
+const saveUtcShifts = (shifts: ShiftInput[]) =>
+  send<Shift[]>("put", "/me/shifts", { shifts });
+
 export const api = {
   myShifts: (from?: string, to?: string) =>
     get<Shift[]>(`/me/shifts${range(from, to)}`),
 
   saveShifts: (shifts: ShiftInput[]) =>
-    send<Shift[]>("put", "/me/shifts", { shifts: shifts.map(toUtcInput) }),
+    saveUtcShifts(shifts.map(toUtcInput)),
+
+  saveUtcShifts,
 
   deleteShift: (id: string) =>
     send<{ deleted: boolean }>("delete", `/me/shifts/${id}`),

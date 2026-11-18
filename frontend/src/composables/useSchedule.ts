@@ -12,6 +12,8 @@ import { commonFreeWindows } from '@/lib/freeHours'
 import { holidayName } from '@/lib/holidays'
 import { MOCK_FRIENDS, USE_MOCK_FRIENDS, mockShifts } from '@/lib/mock'
 import { useScheduleStore } from '@/stores/schedule'
+import { useLocalShiftsStore } from '@/stores/localShifts'
+import { isAndroid } from '@/lib/syncService'
 import { setConnection } from '@/composables/useConnection'
 import { showAppToast } from '@/composables/useAppToast'
 
@@ -23,7 +25,20 @@ export type Entry = { who: string; name: string; color: string; shift: Shift; is
 /** Queries, mutations and derived calendar data on top of the client store. */
 export function useSchedule() {
   const store = useScheduleStore()
+  const local = useLocalShiftsStore()
   const qc = useQueryClient()
+  const owner = store.state.device?.userId
+  if (owner && !local.cache) {
+    // Older versions cached each calendar range separately.
+    const cached = qc.getQueriesData<Shift[]>({ queryKey: ['shifts', ME] })
+      .filter(([key, shifts]) => key.length === 4 && Array.isArray(shifts))
+      .sort(([a], [b]) => (qc.getQueryState(a)?.dataUpdatedAt ?? 0) - (qc.getQueryState(b)?.dataUpdatedAt ?? 0))
+    if (cached.length) {
+      const legacy = { owner, shifts: cached.flatMap(([, shifts]) => shifts ?? []) }
+      if (isAndroid) void local.open(legacy).catch(() => { /* Reported by useScheduleSync. */ })
+      else void local.remember(legacy)
+    }
+  }
 
   const enabled = computed(() => !!store.state.device)
   const range = computed(() => gridRange(store.month))
@@ -36,10 +51,14 @@ export function useSchedule() {
   const subsQuery = useQuery({ queryKey: ['subs'], queryFn: api.subscriptions, enabled })
 
   const mineQuery = useQuery({
-    queryKey: computed(() => ['shifts', ME, range.value.from, range.value.to]),
-    queryFn: () => api.myShifts(padded.value.from, padded.value.to),
+    queryKey: computed(() => ['shifts', ME, store.state.device?.userId]),
+    queryFn: async ({ queryKey }) => {
+      const owner = queryKey[2]
+      const shifts = await api.myShifts()
+      if (owner && owner === store.state.device?.userId) await local.remember({ owner, shifts })
+      return shifts
+    },
     enabled,
-    placeholderData: keepPreviousData,
   })
 
   const subs = computed(() => subsQuery.data.value ?? [])
@@ -97,7 +116,11 @@ export function useSchedule() {
     return [...individuals, ...groupEntries]
   })
 
-  const myShifts = computed(() => (mineQuery.data.value ?? []).map(toLocalShift))
+  const myShifts = computed(() => local.shifts
+    .filter(({ date }) => date >= padded.value.from && date <= padded.value.to)
+    .map(toLocalShift)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start)))
+  const mineLoaded = computed(() => !!local.cache && local.cache.owner === store.state.device?.userId)
 
   /** date -> entries of all visible people */
   const byDate = computed(() => {
@@ -150,7 +173,7 @@ export function useSchedule() {
   const commonOff = computed(() => {
     const visible = people.value.filter((p) => !store.state.hidden.includes(p.id))
     const loaded = people.value.every((p, i) => p.id === ME || p.id.startsWith('mock-') || friendQueries.value[i - 1]?.data)
-    if (!loaded || !mineQuery.data.value) return []
+    if (!loaded || !mineLoaded.value) return []
     // with a single visible person every free day would be "common"
     if (visible.length < 2) return []
     return freeDays(Object.keys(byDate.value), range.value.from, range.value.to)
@@ -160,7 +183,7 @@ export function useSchedule() {
   const commonFreeDays = computed(() => {
     const visible = people.value.filter((p) => !store.state.hidden.includes(p.id))
     const loaded = people.value.every((p, i) => p.id === ME || p.id.startsWith('mock-') || friendQueries.value[i - 1]?.data)
-    if (!loaded || !mineQuery.data.value) return []
+    if (!loaded || !mineLoaded.value) return []
     // an intersection needs at least two schedules
     if (visible.length < 2) return []
     // days without any shifts are already fully free (commonOff), so only busy dates are checked
@@ -181,16 +204,6 @@ export function useSchedule() {
     return map
   })
 
-  const invalidateMine = () => qc.invalidateQueries({ queryKey: ['shifts', ME] })
-  const save = useMutation({
-    mutationFn: async ({ items, removeIds }: { items: ShiftInput[]; removeIds: string[] }) => {
-      await store.ensureDevice()
-      await Promise.all(removeIds.map((id) => api.deleteShift(id)))
-      if (items.length) await api.saveShifts(items)
-    },
-    onSettled: invalidateMine,
-  })
-  const remove = useMutation({ mutationFn: api.deleteShift, onSettled: invalidateMine })
   const subscribe = useMutation({
     mutationFn: ({ code }: { code: string; label: string }) => api.subscribe(code),
     onSuccess: (sub, { code, label }) => {
@@ -208,7 +221,7 @@ export function useSchedule() {
   })
 
   const error = computed(() => {
-    const e = [subsQuery, mineQuery, save, remove, subscribe, unsubscribe, regenerate]
+    const e = [subsQuery, mineQuery, subscribe, unsubscribe, regenerate]
       .map((q) => q.error.value)
       .find(Boolean)
     return e instanceof Error ? e.message : ''
@@ -218,7 +231,7 @@ export function useSchedule() {
     month: computed(() => store.month),
     hidden: computed(() => store.state.hidden),
     shareCode: computed(() => store.state.device?.shareCode ?? ''),
-    loading: computed(() => mineQuery.isFetching.value || subsQuery.isFetching.value),
+    loading: computed(() => (!mineLoaded.value && mineQuery.isFetching.value) || subsQuery.isFetching.value),
     people,
     allPeople,
     byDate,
@@ -233,8 +246,12 @@ export function useSchedule() {
     toggle: store.toggle,
     rename: store.rename,
     setColor: store.setColor,
-    saveShifts: (items: ShiftInput[], removeIds: string[] = []) => save.mutateAsync({ items, removeIds }),
-    deleteShift: (id: string) => remove.mutate(id),
+    saveShifts: (items: ShiftInput[], removeIds: string[] = []) => local.edit(items, removeIds),
+    deleteShift: (id: string) => {
+      void local.edit([], [id]).catch((error: unknown) => {
+        showAppToast(error instanceof Error ? error.message : 'Не удалось удалить смену.', 'error')
+      })
+    },
     addFriend: async (code: string, label: string) => {
       try {
         await subscribe.mutateAsync({ code: code.trim().toUpperCase(), label })
@@ -251,7 +268,18 @@ export function useSchedule() {
 /** Registers the device and refetches a friend's shifts whenever the server pushes a change. Call once. */
 export function useScheduleSync() {
   const store = useScheduleStore()
+  const local = useLocalShiftsStore()
   const qc = useQueryClient()
+
+  void local.open().catch((error: unknown) => {
+    showAppToast(error instanceof Error ? error.message : 'Не удалось загрузить локальные смены.', 'error')
+  })
+  const flush = () => { void local.flush().catch(() => { /* The journal will be retried. */ }) }
+  const onVisible = () => { if (!document.hidden) flush() }
+  flush()
+  window.addEventListener('online', flush)
+  window.addEventListener('storage', local.reloadJournal)
+  document.addEventListener('visibilitychange', onVisible)
 
   store.ensureDevice().catch((error: unknown) => {
     setConnection('offline')
@@ -271,11 +299,17 @@ export function useScheduleSync() {
   }
   // without a live stream, poll so the calendar still picks up changes
   const poll = setInterval(() => {
+    flush()
     if (streamOpen || !store.state.device) return
     qc.invalidateQueries({ queryKey: ['shifts'] })
     probe()
   }, 30_000)
-  onScopeDispose(() => clearInterval(poll))
+  onScopeDispose(() => {
+    clearInterval(poll)
+    window.removeEventListener('online', flush)
+    window.removeEventListener('storage', local.reloadJournal)
+    document.removeEventListener('visibilitychange', onVisible)
+  })
 
   const url = computed(() => (store.state.device ? eventsUrl(store.state.device.token) : undefined))
   const { eventSource } = useEventSource(url, ['schedule.changed'], { autoReconnect: true })

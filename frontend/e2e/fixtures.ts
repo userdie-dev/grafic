@@ -56,10 +56,19 @@ export { expect }
 /** The month-grid cell for a YYYY-MM-DD date. */
 export const dayCell = (page: Page, isoDate: string) => page.locator(`[data-slot="calendar-cell-trigger"][data-value="${isoDate}"]`)
 
-/** Opens a day and saves a shift with the form's defaults (preset "Обычный", 09:00–18:00, repeated weekly). */
-export async function addDefaultShift(page: Page, isoDate: string) {
+export async function openDayList(page: Page, isoDate: string) {
   await dayCell(page, isoDate).click()
+  await drawer(page).getByRole('tab', { name: 'Список' }).click()
+}
+
+/** Saves a 09:00–18:00 shift, optionally using the weekly preset. */
+export async function addDefaultShift(page: Page, isoDate: string, weekly = false) {
+  await openDayList(page, isoDate)
   await page.getByRole('button', { name: 'Добавить смену' }).click()
+  if (weekly) {
+    await page.getByRole('button', { name: 'Пресет', exact: true }).click()
+    await page.getByRole('button', { name: 'Обычный', exact: true }).click()
+  }
   await page.getByRole('button', { name: 'Сохранить' }).click()
 }
 

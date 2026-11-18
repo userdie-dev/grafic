@@ -1,4 +1,4 @@
-import { addDefaultShift, dayCell, drawer, expect, monthTitle, test } from './fixtures'
+import { addDefaultShift, drawer, expect, monthTitle, openDayList, test } from './fixtures'
 
 const DAY = '2026-03-10'
 
@@ -33,12 +33,12 @@ test.describe('my shifts', () => {
     await expect.poll(() => api.shiftsOf(api.users[0]!.id).length).toBeGreaterThan(0)
 
     await app.reload()
-    await dayCell(app, DAY).click()
+    await openDayList(app, DAY)
     await expect(drawer(app).getByText('09:00–18:00')).toBeVisible()
   })
 
-  test('the default preset repeats weekly, not daily', async ({ app, api }) => {
-    await addDefaultShift(app, DAY)
+  test('the weekly preset repeats every seven days', async ({ app, api }) => {
+    await addDefaultShift(app, DAY, true)
     await expect.poll(() => api.shiftsOf(api.users[0]!.id).length).toBeGreaterThan(1)
     const times = api.shiftsOf(api.users[0]!.id).map((s) => Date.parse(`${s.date}T00:00:00Z`))
     times.slice(1).forEach((t, i) => expect(t - times[i]!).toBe(7 * 24 * 3600_000))
@@ -50,26 +50,42 @@ test.describe('my shifts', () => {
     await app.getByPlaceholder('Заметка').fill('Склад')
     await app.getByRole('button', { name: 'Сохранить' }).click()
     await expect(drawer(app).getByText('Склад')).toBeVisible()
-    expect(api.shiftsOf(api.users[0]!.id).some((s) => s.note === 'Склад')).toBe(true)
+    await expect.poll(() => api.shiftsOf(api.users[0]!.id).some((s) => s.note === 'Склад')).toBe(true)
   })
 
   test('deletes a shift', async ({ app, api }) => {
     await addDefaultShift(app, DAY)
+    await expect.poll(() => api.shiftsOf(api.users[0]!.id).length).toBeGreaterThan(0)
     const before = api.shiftsOf(api.users[0]!.id).length
     await app.getByRole('button', { name: 'Удалить' }).click()
     await expect(drawer(app).getByText('В этот день смен нет')).toBeVisible()
-    expect(api.shiftsOf(api.users[0]!.id)).toHaveLength(before - 1)
+    await expect.poll(() => api.shiftsOf(api.users[0]!.id).length).toBe(before - 1)
   })
 
-  // BUG found by this suite: a mutation's error lives in the useSchedule() instance of the component that ran it,
-  // but only App.vue renders `error` (from its own instance), so a failed save or unknown friend code shows nothing.
-  // Drop the fixme once errors are surfaced where the user acts.
-  test.fixme('shows the server error when saving fails', async ({ app, api }) => {
-    await dayCell(app, DAY).click()
-    await app.getByRole('button', { name: 'Добавить смену' }).click()
-    api.failNext = { status: 400, message: 'start must be HH:mm' }
-    await app.getByRole('button', { name: 'Сохранить' }).click()
-    await expect(app.getByText('start must be HH:mm')).toBeVisible()
+  test('keeps offline additions and deletions after reload and sends them on reconnect', async ({ app, api, network }) => {
+    await expect.poll(() => api.users.length).toBe(1)
+    network.offline = true
+    await addDefaultShift(app, DAY, true)
+    await expect(drawer(app).getByText('09:00–18:00')).toBeVisible()
+    await app.reload()
+    await openDayList(app, DAY)
+    await expect(drawer(app).getByText('09:00–18:00')).toBeVisible()
+    await app.getByRole('button', { name: 'Удалить' }).click()
+    await expect(drawer(app).getByText('В этот день смен нет')).toBeVisible()
+    expect(api.shiftsOf(api.users[0]!.id)).toHaveLength(0)
+
+    await app.reload()
+    await openDayList(app, DAY)
+    await expect(drawer(app).getByText('В этот день смен нет')).toBeVisible()
+    network.offline = false
+    await app.evaluate(() => window.dispatchEvent(new Event('online')))
+    await expect.poll(() => app.evaluate(() => {
+      const journal = JSON.parse(localStorage.getItem('grafic.shiftJournal') ?? '{}')
+      return journal.pending?.length
+    })).toBe(0)
+    const shifts = api.shiftsOf(api.users[0]!.id)
+    expect(shifts.length).toBeGreaterThan(0)
+    expect(shifts.some((shift) => shift.date === DAY)).toBe(false)
   })
 })
 
@@ -92,7 +108,7 @@ test.describe('friends', () => {
     await expect.poll(() => api.subs.length).toBe(1)
 
     await app.getByRole('link', { name: 'Календарь' }).click()
-    await dayCell(app, '2026-03-12').click()
+    await openDayList(app, '2026-03-12')
     await expect(drawer(app).getByText('Саша')).toBeVisible()
     await expect(drawer(app).getByText(/Смена друга/)).toBeVisible()
   })
@@ -133,12 +149,10 @@ test.describe('resilience', () => {
     await addDefaultShift(app, DAY)
     await expect.poll(() => api.shiftsOf(api.users[0]!.id).length).toBeGreaterThan(0)
     await expect(app.getByText('В этот день смен нет')).toHaveCount(0)
-    // the query cache is mirrored to localStorage on a debounce
-    await expect.poll(() => app.evaluate(() => localStorage.getItem('grafic.cache')?.includes('"start"') ?? false)).toBe(true)
     network.offline = true
     await app.reload()
     await expect(app.getByText('Подключение к серверу')).toHaveCount(0)
-    await dayCell(app, DAY).click()
+    await openDayList(app, DAY)
     await expect(drawer(app).getByText('09:00–18:00')).toBeVisible()
   })
 

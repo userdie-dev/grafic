@@ -1,4 +1,4 @@
-import { addDefaultShift, dayCell, drawer, expect, test } from './fixtures'
+import { addDefaultShift, drawer, expect, openDayList, test } from './fixtures'
 
 /**
  * The server stores UTC. The same local shift "09:00-18:00 on 10 March" must reach it as the
@@ -22,7 +22,7 @@ for (const z of ZONES) {
       expect(api.shiftsOf(api.users[0]!.id)[0]).toMatchObject({ date: z.date, start: z.start, end: z.end })
 
       await app.reload()
-      await dayCell(app, '2026-03-10').click()
+      await openDayList(app, '2026-03-10')
       await expect(drawer(app).getByText('09:00–18:00')).toBeVisible()
     })
   })
@@ -37,7 +37,7 @@ test.describe('shifts stored in UTC are shown on the right local day', () => {
     // 22:00Z-06:00Z on the 9th is 11:00-19:00 on the 10th in Auckland (UTC+13 in March)
     api.handle({ method: 'PUT', path: '/me/shifts', token: me.token, body: { shifts: [{ date: '2026-03-09', start: '22:00', end: '06:00' }] } })
     await app.reload()
-    await dayCell(app, '2026-03-10').click()
+    await openDayList(app, '2026-03-10')
     await expect(drawer(app).getByText('11:00–19:00')).toBeVisible()
   })
 })

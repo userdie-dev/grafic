@@ -6,6 +6,7 @@ import { registerDevice, setToken } from '@/lib/api'
 import { setUnauthorizedHandler } from '@/app/config/axios'
 import type { Device } from '@/lib/dto'
 import { iso } from '@/lib/dates'
+import { isAndroid, nativeDevice } from '@/lib/syncService'
 
 export interface Group {
   id: string
@@ -39,7 +40,7 @@ const CURRENT_VERSION = 1
 
 /**
  * Client-side state only; the whole store is mirrored to localStorage by vueuse.
- * Server data (shifts, subscriptions) lives in the vue-query cache.
+ * The local shift journal lives in its own store.
  */
 export const useScheduleStore = defineStore('schedule', () => {
   const state = useLocalStorage<State>(
@@ -84,7 +85,7 @@ export const useScheduleStore = defineStore('schedule', () => {
   async function ensureDevice() {
     if (state.value.device) return
     registering ??= (async () => {
-      const device = await registerDevice()
+      const device = await (isAndroid ? nativeDevice(null) : registerDevice())
       setToken(device.token)
       state.value.device = device
     })().finally(() => (registering = undefined))
@@ -96,7 +97,8 @@ export const useScheduleStore = defineStore('schedule', () => {
   setUnauthorizedHandler(() => {
     reregistering ??= (async () => {
       setToken('')
-      const device = await registerDevice()
+      const previous = state.value.device
+      const device = await (isAndroid ? nativeDevice(previous, previous?.token) : registerDevice())
       setToken(device.token)
       state.value.device = device
     })().finally(() => (reregistering = undefined))
