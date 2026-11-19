@@ -25,7 +25,7 @@ vi.mock('@/lib/api', () => ({
 }))
 
 import { api } from '@/lib/api'
-import SettingsPage from '@/pages/SettingsPage/index.vue'
+import NotificationsSection from '@/components/settings/NotificationsSection.vue'
 import {
   notificationsSupported,
   requestNotifyPermission,
@@ -179,7 +179,7 @@ describe('useCommonOffNotify', () => {
 })
 
 describe('Settings toggle', () => {
-  const mountSettings = () => mount(SettingsPage)
+  const mountSettings = () => mount(NotificationsSection)
   const toggle = (w: ReturnType<typeof mountSettings>) => w.get('button[role="switch"]')
 
   it('turns on after the permission is granted and off again', async () => {

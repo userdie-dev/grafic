@@ -21,19 +21,23 @@ export function createQueryClient(): QueryClient {
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined
-  client.getQueryCache().subscribe(() => {
+  function persist() {
+    try {
+      const state = dehydrate(client, {
+        shouldDehydrateQuery: (q) => q.queryKey[0] === 'subs'
+          ? q.state.data !== undefined
+          : q.state.status === 'success' && !(isAndroid && q.queryKey[0] === 'shifts' && q.queryKey[1] === 'me'),
+      })
+      localStorage.setItem(KEY, JSON.stringify(state))
+    } catch {
+      /* storage full or unavailable */
+    }
+  }
+
+  client.getQueryCache().subscribe((event) => {
     clearTimeout(timer)
-    timer = setTimeout(() => {
-      try {
-        const state = dehydrate(client, {
-          shouldDehydrateQuery: (q) => q.state.status === 'success'
-            && !(isAndroid && q.queryKey[0] === 'shifts' && q.queryKey[1] === 'me'),
-        })
-        localStorage.setItem(KEY, JSON.stringify(state))
-      } catch {
-        /* storage full or unavailable */
-      }
-    }, 500)
+    if (event.type === 'updated' && event.action.type === 'success' && event.query.queryKey[0] === 'subs') persist()
+    else timer = setTimeout(persist, 500)
   })
 
   return client

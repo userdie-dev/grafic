@@ -8,10 +8,10 @@
           <Button
             v-if="form"
             type="button"
-            variant="ghost"
+            variant="secondary"
             size="icon"
             aria-label="Назад"
-            class="-ml-1 rounded-full"
+            class="-ml-1 rounded-2xl"
             @click="backToList"
             ><RiArrowLeftLine
           /></Button>
@@ -23,7 +23,7 @@
           v-if="!form"
           type="button"
           size="icon-lg"
-          class="shrink-0 rounded-full"
+          class="shrink-0 rounded-2xl"
           aria-label="Добавить смену"
           @click="form = { shift: null }"
           ><RiAddLine class="size-5"
@@ -41,17 +41,17 @@
         <Button
           v-if="!form"
           type="button"
-          variant="outline"
+          variant="secondary"
           size="icon"
           aria-label="Предыдущий день"
-          class="shrink-0 rounded-full border-2"
+          class="shrink-0 rounded-2xl border-2"
           @click="shiftDay(-1)"
           ><RiArrowLeftSLine class="size-5"
         /></Button>
         
         <div
           v-if="!form"
-          class="flex flex-1 shrink-0 gap-1 rounded-full bg-muted p-1 text-xs"
+          class="flex flex-1 shrink-0 gap-1 rounded-2xl bg-muted p-1 text-xs"
           role="tablist"
           aria-label="Вид смен"
         >
@@ -61,7 +61,7 @@
             type="button"
             role="tab"
             :aria-selected="mode === tab.id"
-            class="flex-1 rounded-full px-3 py-1.5 font-medium transition"
+            class="flex-1 rounded-xl px-3 py-1.5 font-medium transition"
             :class="
               mode === tab.id
                 ? 'bg-background text-foreground shadow-sm'
@@ -76,10 +76,10 @@
         <Button
           v-if="!form"
           type="button"
-          variant="outline"
+          variant="secondary"
           size="icon"
           aria-label="Следующий день"
-          class="shrink-0 rounded-full border-2"
+          class="shrink-0 rounded-2xl border-2"
           @click="shiftDay(1)"
           ><RiArrowRightSLine class="size-5"
         /></Button>

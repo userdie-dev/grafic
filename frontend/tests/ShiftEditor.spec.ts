@@ -58,12 +58,22 @@ const click = async (el: Element) => {
   ;(el as HTMLElement).click()
   await flushPromises()
 }
-const input = async (el: HTMLInputElement, value: string) => {
+const selectTrigger = (label: string) =>
+  [...body().querySelectorAll<HTMLLabelElement>('label')].find((el) => el.textContent === label)!.control!
+const select = async (label: string, value: string) => {
+  const pressEnter = (el: Element) => el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
+  pressEnter(selectTrigger(label))
+  await flushPromises()
+  const option = [...body().querySelectorAll('[role="option"]')].find((el) => el.textContent?.trim() === value)!
+  pressEnter(option)
+  await flushPromises()
+}
+const input = async (el: HTMLTextAreaElement, value: string) => {
   el.value = value
   el.dispatchEvent(new Event('input', { bubbles: true }))
   await flushPromises()
 }
-const inputs = () => [...body().querySelectorAll<HTMLInputElement>('input')]
+const noteField = () => body().querySelector<HTMLTextAreaElement>('textarea[placeholder]')!
 const form = () => body().querySelector('form')!
 const submit = async () => {
   form().dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
@@ -136,7 +146,7 @@ describe('editing an existing shift', () => {
     await edit()
     expect(body().textContent).toContain('Изменить смену')
     expect(btn('5/2')).toBeUndefined()
-    expect(inputs().find((i) => i.placeholder === 'Заметка')!.value).toBe('Заметка')
+    expect(noteField().value).toBe('Заметка')
     expect(body().textContent).toContain('09:00')
     expect(body().textContent).toContain('18:00')
     expect(body().textContent).not.toContain('Повторять каждую неделю')
@@ -144,7 +154,7 @@ describe('editing an existing shift', () => {
 
   it('prefills an empty note when the shift has none', async () => {
     await edit(shift())
-    expect(inputs().find((i) => i.placeholder === 'Заметка')!.value).toBe('')
+    expect(noteField().value).toBe('')
   })
 
   it('saves the same row without removal when the start is unchanged', async () => {
@@ -169,7 +179,7 @@ describe('editing an existing shift', () => {
 
   it('sends a null note when cleared', async () => {
     await edit()
-    await input(inputs().find((i) => i.placeholder === 'Заметка')!, '')
+    await input(noteField(), '')
     await submit()
     expect((saved()[0] as any)[0][0].note).toBeNull()
   })
@@ -198,13 +208,14 @@ describe('adding shifts', () => {
   it('keeps the form and entered data after a failed save, then allows retrying', async () => {
     await mountEditor()
     await openAdd()
-    await input(inputs().find((i) => i.placeholder === 'Заметка')!, 'Склад')
+    await input(noteField(), 'Склад\nВторая строка')
     editor.save.mockRejectedValueOnce(new Error('Не удалось сохранить'))
     await click(btn('Сохранить'))
     expect(body().textContent).toContain('Не удалось сохранить')
-    expect(inputs().find((i) => i.placeholder === 'Заметка')!.value).toBe('Склад')
+    expect(noteField().value).toBe('Склад\nВторая строка')
     await click(btn('Сохранить'))
     expect(editor.save).toHaveBeenCalledTimes(2)
+    expect(saved()[1]?.[0]).toEqual([expect.objectContaining({ note: 'Склад\nВторая строка' })])
     expect(body().querySelector('form')).toBeNull()
   })
 
@@ -235,9 +246,9 @@ describe('adding shifts', () => {
   it('repeats a plain shift weekly for a year', async () => {
     await mountEditor()
     await openAdd()
-    await click(btn('Пресет'))
-    await click(btn('Обычный'))
-    await input(inputs().find((i) => i.placeholder === 'Заметка')!, 'Смена')
+    await select('Тип графика', 'Пресет')
+    await select('Пресет', 'Обычный')
+    await input(noteField(), 'Смена')
     await submit()
     const items = (saved()[0] as any)[0]
     expect(items.slice(0, 3).map((i: any) => i.date)).toEqual(['2030-01-07', '2030-01-14', '2030-01-21'])
@@ -248,8 +259,8 @@ describe('adding shifts', () => {
   it('fills a cycle preset across months by default', async () => {
     await mountEditor()
     await openAdd()
-    await click(btn('Пресет'))
-    await click(btn('2/2'))
+    await select('Тип графика', 'Пресет')
+    await select('Пресет', '2/2')
     expect(body().textContent).toContain('2 раб., 2 вых., начиная с выбранного дня')
     expect(body().textContent).not.toContain('Заполнить график до')
     await submit()
@@ -263,8 +274,8 @@ describe('adding shifts', () => {
   it('fills weekday presets and supports night shifts', async () => {
     await mountEditor()
     await openAdd()
-    await click(btn('Пресет'))
-    await click(btn('5/2'))
+    await select('Тип графика', 'Пресет')
+    await select('Пресет', '5/2')
     expect(body().textContent).toContain('Пн–Пт рабочие')
     // Изменим время на ночное вручную через TimePicker
     const pickers = w.findAllComponents({ name: 'TimePicker' })
@@ -281,98 +292,32 @@ describe('adding shifts', () => {
   it('switching back to the plain preset restores its times', async () => {
     await mountEditor()
     await openAdd()
-    await click(btn('Пресет'))
-    await click(btn('2/2'))
-    await click(btn('Обычный'))
+    await select('Тип графика', 'Пресет')
+    await select('Пресет', '2/2')
+    await select('Пресет', 'Обычный')
     await submit()
     expect((saved()[0] as any)[0][0]).toMatchObject({ start: '09:00', end: '18:00' })
   })
 })
 
 describe('custom presets', () => {
-  const draftToggle = () => aria('Создать свой пресет')
-  const open = async () => {
+  it('selects a saved preset and falls back to the default after deletion', async () => {
     await mountEditor()
-    await openAdd()
-    await click(btn('Пресет'))
-    await click(draftToggle())
-  }
-  const field = (placeholderOrIndex: string | number) =>
-    typeof placeholderOrIndex === 'string'
-      ? inputs().find((i) => i.placeholder === placeholderOrIndex)!
-      : inputs().filter((i) => i.type === 'number')[placeholderOrIndex]!
-  const timePickers = () => w.findAllComponents({ name: 'TimePicker' })
-
-  it('toggles the draft panel', async () => {
-    await open()
-    expect(body().textContent).toContain('Сохранить пресет')
-    await click(draftToggle())
-    expect(body().textContent).not.toContain('Сохранить пресет')
-  })
-
-  it('creates a cycle preset with a generated label and selects it', async () => {
-    await open()
-    await click(btn('Сохранить пресет'))
-    expect(btn('2/2')).toBeTruthy()
     const store = usePresetsStore()
-    expect(store.all.at(-1)).toMatchObject({ custom: true, label: '2/2', rule: { type: 'cycle', work: 2, off: 2 } })
-    expect(body().textContent).not.toContain('Сохранить пресет')
-    expect(body().textContent).toContain('Удалить пресет')
-  })
-
-  it('creates a cycle preset with a custom label', async () => {
-    await open()
-    await input(field('Название пресета'), '  Мой  ')
-    await input(field(0), '3')
-    await input(field(1), '1')
-    await click(btn('Сохранить пресет'))
-    expect(usePresetsStore().all.at(-1)).toMatchObject({ label: 'Мой', rule: { work: 3, off: 1 } })
-  })
-
-  it('validates cycle numbers', async () => {
-    await open()
-    await input(field(0), '0')
-    await click(btn('Сохранить пресет'))
-    expect(body().textContent).toContain('Укажите число рабочих и выходных дней')
-    await input(field(0), '1')
-    await input(field(1), '-1')
-    await click(btn('Сохранить пресет'))
-    expect(body().textContent).toContain('Укажите число рабочих и выходных дней')
-    expect(usePresetsStore().all.every((p) => !p.custom)).toBe(true)
-  })
-
-  it('creates a weekdays preset, toggling days, with a default label', async () => {
-    await open()
-    await click(btn('По дням недели'))
-    const day = (l: string) => [...body().querySelectorAll<HTMLButtonElement>('.h-9')].find((b) => b.textContent === l)!
-    await click(day('Пн')) // off
-    await click(day('Сб')) // on
-    await click(btn('Сохранить пресет'))
-    expect(usePresetsStore().all.at(-1)).toMatchObject({ label: 'Свой', rule: { type: 'weekdays', days: [2, 3, 4, 5, 6] } })
-  })
-
-  it('requires at least one weekday', async () => {
-    await open()
-    await click(btn('По дням недели'))
-    for (const l of ['Пн', 'Вт', 'Ср', 'Чт', 'Пт']) await click([...body().querySelectorAll<HTMLButtonElement>('.h-9')].find((b) => b.textContent === l)!)
-    await click(btn('Сохранить пресет'))
-    expect(body().textContent).toContain('Выберите хотя бы один день недели')
-    await click(btn('Через N дней'))
-    expect(body().textContent).toContain('Рабочих дней')
-  })
-
-  it('deletes a custom preset and falls back to the plain one', async () => {
-    await open()
-    await click(btn('Сохранить пресет'))
+    store.add({
+      label: 'Мой график',
+      hint: 'Смены по циклу',
+      rule: { type: 'cycle', work: 3, off: 1 },
+      day: ['08:00', '20:00'],
+      night: ['20:00', '08:00'],
+    })
+    await openAdd()
+    await select('Тип графика', 'Пресет')
+    expect(aria('Создать свой пресет')).toBeNull()
+    await select('Пресет', 'Мой график')
+    expect(selectTrigger('Пресет').textContent).toBe('Мой график')
     await click(btn('Удалить пресет'))
-    expect(usePresetsStore().all.every((p) => !p.custom)).toBe(true)
-    expect(body().textContent).not.toContain('Удалить пресет')
-    expect(body().textContent).not.toContain('Заполнить график до')
-  })
-
-  it('selecting a preset closes the draft panel', async () => {
-    await open()
-    await click(btn('5/2'))
-    expect(body().textContent).not.toContain('Сохранить пресет')
+    expect(store.all.every((p) => !p.custom)).toBe(true)
+    expect(selectTrigger('Пресет').textContent).toBe('Один раз')
   })
 })

@@ -1,5 +1,5 @@
 <template>
-  <SettingsSection title="Оформление">
+  <SettingsSection title="Тема приложения">
     <SettingsRow
       v-for="o in options"
       :key="o.value"
@@ -7,7 +7,6 @@
       :icon="o.icon"
       :tint="o.tint"
       :title="o.label"
-      :hint="o.hint"
       @click="setTheme(o.value)"
     >
       <span
@@ -29,9 +28,9 @@ import SettingsSection from './SettingsSection.vue'
 
 const { theme, setTheme } = useTheme()
 
-const options: { value: Theme; label: string; hint: string; icon: Component; tint: string }[] = [
-  { value: 'light', label: 'Светлая', hint: 'Всегда светлое оформление', icon: Sun, tint: 'bg-amber-200 text-amber-800' },
-  { value: 'dark', label: 'Тёмная', hint: 'Всегда тёмное оформление', icon: Moon, tint: 'bg-indigo-200 text-indigo-800' },
-  { value: 'system', label: 'Системная', hint: 'Как в настройках телефона', icon: Smartphone, tint: 'bg-emerald-200 text-emerald-800' },
+const options: { value: Theme; label: string; icon: Component; tint: string }[] = [
+  { value: 'light', label: 'Светлая', icon: Sun, tint: 'bg-amber-200 text-amber-800' },
+  { value: 'dark', label: 'Тёмная', icon: Moon, tint: 'bg-indigo-200 text-indigo-800' },
+  { value: 'system', label: 'Системная', icon: Smartphone, tint: 'bg-emerald-200 text-emerald-800' },
 ]
 </script>

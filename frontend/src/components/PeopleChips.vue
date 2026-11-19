@@ -4,7 +4,7 @@
       v-for="p in people"
       :key="p.id"
       type="button"
-      class="flex min-h-14 touch-manipulation select-none items-center gap-3 rounded-2xl bg-card px-4 py-3 text-left font-medium shadow-sm transition-[opacity,transform] active:scale-[0.97] sm:rounded-full sm:px-5"
+      class="flex min-h-14 touch-manipulation select-none items-center gap-3 rounded-2xl bg-card px-4 py-3 text-left font-medium shadow-sm transition-[opacity,transform] active:scale-[0.97]sm:px-5"
       :class="{ 'line-through opacity-40': hidden.includes(p.id) }"
       @click="emit('pick', p)"
     >

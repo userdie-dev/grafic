@@ -4,6 +4,7 @@ import { RiTimeLine } from '@remixicon/vue'
 import { cn } from 'cn'
 import { computed, nextTick, ref, watch } from 'vue'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer'
+import { Button } from '@/components/ui/button'
 
 const props = defineProps<{
   /** `HH:mm`; empty string means no value. */
@@ -113,11 +114,12 @@ watch(open, async (v) => {
           >{{ pad(m) }}</button>
         </div>
       </div>
-      <button
+      <Button
         type="button"
-        class="mt-4 h-12 w-full shrink-0 rounded-full bg-foreground text-base font-medium text-background transition-colors active:bg-foreground/90"
+        variant="main"
+        class="mt-4 h-12 w-full text-base"
         @click="confirm"
-      >Готово</button>
+      >Готово</Button>
     </DrawerContent>
   </Drawer>
 </template>

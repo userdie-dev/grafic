@@ -20,7 +20,7 @@
           </div>
           <div class="flex shrink-0 gap-2">
             <Button
-              variant="ghost"
+              variant="secondary"
               size="icon-sm"
               aria-label="Изменить цвет"
               @click="openColorPicker(person)"
@@ -28,7 +28,7 @@
               <RiPaletteLine />
             </Button>
             <Button
-              variant="ghost"
+              variant="secondary"
               size="icon-sm"
               aria-label="Переименовать"
               @click="openRename(person)"
@@ -37,7 +37,7 @@
             </Button>
             <Button
               v-if="person.subId"
-              variant="destructive"
+              variant="secondary" class="text-destructive"
               size="icon-sm"
               aria-label="Удалить"
               @click="s.removeFriend(person.subId)"

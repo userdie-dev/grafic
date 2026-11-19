@@ -4,7 +4,8 @@
 	"webDir": "dist",
 	"plugins": {
 		"CapacitorUpdater": {
-			"autoUpdate": false
+			"autoUpdate": false,
+			"nativeUpdatePrompt": false
 		}
 	}
 }

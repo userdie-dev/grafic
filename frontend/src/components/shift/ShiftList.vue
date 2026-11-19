@@ -6,8 +6,8 @@
           <NightIcon v-if="isNightShift(s)" />{{ s.start }}–{{ s.end }} <span class="font-normal text-muted-foreground">{{ s.note }}</span>
         </span>
         <span class="flex shrink-0 gap-1">
-          <Button variant="ghost" size="icon-sm" aria-label="Изменить" @click="emit('edit', s)"><RiEditLine /></Button>
-          <Button variant="destructive" size="icon-sm" aria-label="Удалить" @click="editor.remove(s.id)"><RiDeleteBinLine /></Button>
+          <Button variant="secondary" size="icon-sm" aria-label="Изменить" @click="emit('edit', s)"><RiEditLine /></Button>
+          <Button variant="secondary" class="text-destructive" size="icon-sm" aria-label="Удалить" @click="editor.remove(s.id)"><RiDeleteBinLine /></Button>
         </span>
       </li>
       <li v-if="!editor.shifts.value.length" class="rounded-2xl border border-dashed py-4 text-center text-sm text-muted-foreground">В этот день смен нет</li>

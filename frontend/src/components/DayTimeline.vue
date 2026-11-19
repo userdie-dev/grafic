@@ -5,7 +5,7 @@
         v-for="person in peopleWithEntries"
         :key="person.id"
         type="button"
-        class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition"
+        class="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition"
         :class="
           isHidden(person.id)
             ? 'border border-dashed border-border text-muted-foreground opacity-60'
@@ -25,7 +25,7 @@
       <button
         v-if="hiddenIds.length"
         type="button"
-        class="rounded-full px-2.5 py-1 text-xs text-muted-foreground underline"
+        class="rounded-lg px-2.5 py-1 text-xs text-muted-foreground underline"
         @click="hiddenIds = []"
       >
         Показать всех

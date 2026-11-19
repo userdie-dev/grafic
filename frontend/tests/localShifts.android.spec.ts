@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { QueryClient } from '@tanstack/vue-query'
 import { expect, it, vi } from 'vitest'
 import type { ShiftCache, ShiftJournal } from '@/lib/syncService'
 
@@ -13,13 +14,21 @@ const native = vi.hoisted(() => {
     }),
   }
 })
+const friends = vi.hoisted(() => {
+  let snapshot: string | undefined
+  return {
+    read: async () => ({ snapshot }),
+    write: async (value: { snapshot: string }) => { snapshot = value.snapshot },
+  }
+})
 vi.mock('@capacitor/core', () => ({
   Capacitor: { getPlatform: () => 'android', isPluginAvailable: () => true },
-  registerPlugin: () => native,
+  registerPlugin: (name: string) => name === 'ScheduleStorage' ? friends : native,
 }))
 
 import { useLocalShiftsStore } from '@/stores/localShifts'
 import { useScheduleStore } from '@/stores/schedule'
+import { restoreAndroidFriends } from '@/app/config/friendStorage'
 
 it('restores server shifts and local edits from Android storage without writing the graph to localStorage', async () => {
   const device = { userId: 'owner', token: 'token', shareCode: 'ABC123' }
@@ -40,4 +49,27 @@ it('restores server shifts and local edits from Android storage without writing 
   const reopened = useLocalShiftsStore()
   await reopened.open()
   expect(reopened.shifts).toEqual([stored, expect.objectContaining({ note: 'Локальная смена' })])
+})
+
+it('restores saved friends and the existing device after losing WebView storage', async () => {
+  const device = { userId: 'owner', token: 'token', shareCode: 'ABC123' }
+  const subscription = { id: 'sub', ownerId: 'friend' }
+  const store = useScheduleStore(createPinia())
+  const client = new QueryClient()
+  store.state.device = device
+  store.rename('friend', 'Анна')
+  store.setColor('friend', '#123456')
+  client.setQueryData(['subs', device.userId], [subscription])
+  const save = await restoreAndroidFriends(store, client)
+  await save!()
+
+  localStorage.removeItem('grafic.store')
+  const restored = useScheduleStore(createPinia())
+  const offline = new QueryClient()
+  await restoreAndroidFriends(restored, offline)
+  expect(restored.state.device).toEqual(device)
+  expect(restored.state.labels).toEqual({ friend: 'Анна' })
+  expect(restored.state.colors).toEqual({ friend: '#123456' })
+  expect(offline.getQueryData(['subs', device.userId])).toEqual([subscription])
+  expect(offline.getQueryData(['subs', 'another-owner'])).toBeUndefined()
 })

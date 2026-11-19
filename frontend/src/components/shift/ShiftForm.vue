@@ -1,40 +1,16 @@
 <template>
   <form class="space-y-4" @submit.prevent="submit">
     <div v-if="!editing" class="space-y-3">
-      <div class="flex gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          :class="tone(mode === 'single')"
-          class="flex-1 rounded-full"
-          @click="mode = 'single'"
-        >Один день</Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          :class="tone(mode === 'preset')"
-          class="flex-1 rounded-full"
-          @click="mode = 'preset'"
-        >Пресет</Button>
+      <div class="space-y-1.5">
+        <label :for="modeSelectId" class="block text-xs text-muted-foreground">Тип графика</label>
+        <Select :id="modeSelectId" v-model="mode" :options="MODES" class="h-10" />
       </div>
       
       <div v-if="mode === 'preset'" class="space-y-3">
-        <div class="flex flex-wrap gap-2">
-          <Button
-            v-for="p in presets.all"
-            :key="p.id"
-            type="button"
-            size="sm"
-            variant="secondary"
-            :class="tone(preset.id === p.id && !creating)"
-            class="rounded-full"
-            @click="setPreset(p)"
-          >{{ p.label }}</Button>
-          <Button type="button" size="sm" variant="secondary" :class="tone(creating)" class="rounded-full" aria-label="Создать свой пресет" @click="creating = !creating"><RiAddLine /></Button>
+        <div class="space-y-1.5">
+          <label :for="presetSelectId" class="block text-xs text-muted-foreground">Пресет</label>
+          <Select :id="presetSelectId" :model-value="preset.id" :options="presets.all" class="h-10" @select="selectPreset" />
         </div>
-        <PresetCreator v-if="creating" @created="setPreset" />
         <p v-if="hint" class="flex items-center justify-between gap-2 text-xs text-muted-foreground">
           <span>{{ hint }}</span>
           <button v-if="preset.custom" type="button" class="shrink-0 text-destructive underline" @click="deletePreset">Удалить пресет</button>
@@ -46,31 +22,34 @@
       <label class="flex-1 space-y-1.5 text-xs text-muted-foreground">Начало<TimePicker v-model="start" /></label>
       <label class="flex-1 space-y-1.5 text-xs text-muted-foreground">Конец<TimePicker v-model="end" :allow-next-day="true" /></label>
     </div>
-    <Input v-model="note" maxlength="200" placeholder="Заметка" class="h-10" />
+    <Textarea v-model="note" rows="3" maxlength="200" placeholder="Заметка" aria-label="Заметка" />
     <p v-if="problem" class="text-sm text-destructive">{{ problem }}</p>
     <div class="flex gap-2 pt-2">
-      <Button type="submit" size="lg" :disabled="saving" :class="PRIMARY_BLUE" class="h-11 flex-1 rounded-full">{{ saving ? 'Сохранение…' : 'Сохранить' }}</Button>
-      <Button type="button" variant="outline" size="lg" class="h-11 rounded-full" @click="emit('done')">Отмена</Button>
+      <Button type="submit" size="lg" :disabled="saving" class="h-11 flex-1">{{ saving ? 'Сохранение…' : 'Сохранить' }}</Button>
+      <Button type="button" variant="secondary" size="lg" class="h-11" @click="emit('done')">Отмена</Button>
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { addDays, addWeeks, getDay, parseISO } from 'date-fns'
-import { RiAddLine } from '@remixicon/vue'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { TimePicker } from '@/components/ui/time-picker'
 import { useDayEditor } from '@/composables/useDayEditor'
 import type { Shift, ShiftInput } from '@/lib/dto'
 import { iso } from '@/lib/dates'
 import { BUILTIN_PRESETS, describe, works, type Preset } from '@/lib/presets'
-import { PRIMARY_BLUE, tone } from '@/lib/tone'
 import { usePresetsStore } from '@/stores/presets'
-import PresetCreator from './PresetCreator.vue'
 
-type Mode = 'single' | 'preset'
+const MODES = [
+  { id: 'single', label: 'Один день' },
+  { id: 'preset', label: 'Пресет' },
+] as const
+
+type Mode = (typeof MODES)[number]['id']
 
 // without an explicit end date a cycle/weekday preset is laid out for about a year (capped at 366 shifts)
 const DEFAULT_FILL_DAYS = 366
@@ -82,8 +61,9 @@ const editor = useDayEditor()
 const presets = usePresetsStore()
 
 const mode = ref<Mode>('single')
+const modeSelectId = useId()
 const preset = ref<Preset>(BUILTIN_PRESETS[0]!)
-const creating = ref(false)
+const presetSelectId = useId()
 const start = ref(props.editing?.start ?? '09:00')
 const end = ref(props.editing?.end ?? '18:00')
 const note = ref(props.editing?.note ?? '')
@@ -108,9 +88,13 @@ function applyTimes() {
 }
 
 function setPreset(p: Preset) {
-  creating.value = false
   preset.value = p
   applyTimes()
+}
+
+function selectPreset(id: string) {
+  const selected = presets.all.find((p) => p.id === id)
+  if (selected) setPreset(selected)
 }
 
 function deletePreset() {

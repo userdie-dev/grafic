@@ -19,8 +19,8 @@ const forwardedProps = useForwardProps(delegatedProps)
   <CalendarCellTrigger
     data-slot="calendar-cell-trigger"
     :class="cn(
-      buttonVariants({ variant: 'ghost' }),
-      'size-8 p-0 font-normal aria-selected:opacity-100 cursor-default',
+      buttonVariants({ variant: 'secondary' }),
+      'size-8 cursor-default bg-transparent p-0 font-normal text-foreground hover:bg-muted aria-selected:opacity-100',
       '[&[data-today]:not([data-selected])]:bg-accent [&[data-today]:not([data-selected])]:text-accent-foreground',
       // Selected
       'data-[selected]:bg-primary data-[selected]:text-primary-foreground data-[selected]:opacity-100 data-[selected]:hover:bg-primary data-[selected]:hover:text-primary-foreground data-[selected]:focus:bg-primary data-[selected]:focus:text-primary-foreground',

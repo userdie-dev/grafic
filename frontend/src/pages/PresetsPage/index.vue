@@ -1,21 +1,17 @@
 <template>
   <section class="space-y-3">
-    <div class="rounded-[1.75rem] bg-card px-4 pb-4 pt-4">
+    <div class="rounded-4xl bg-card px-4 pb-4 pt-4">
       <div class="mb-4 flex items-center justify-between">
         <h1 class="text-xl font-semibold">Пресеты смен</h1>
         <Button
           size="icon-lg"
-          class="rounded-full"
+          class="rounded-2xl"
           aria-label="Создать пресет"
           @click="showCreateDialog = true"
         >
           <RiAddLine class="size-5" />
         </Button>
       </div>
-
-      <p class="mb-4 text-sm text-muted-foreground">
-        Создавайте собственные шаблоны смен для быстрого добавления в календарь
-      </p>
 
       <!-- Custom presets -->
       <div>
@@ -39,19 +35,19 @@
               </div>
               <div class="flex gap-2">
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="icon"
                   aria-label="Редактировать"
-                  class="size-10 rounded-full"
+                  class="size-10 rounded-2xl"
                   @click="editPreset(preset)"
                 >
                   <RiEditLine class="size-5" />
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="secondary"
                   size="icon"
                   aria-label="Удалить пресет"
-                  class="size-10 rounded-full"
+                  class="text-destructive size-10 rounded-2xl"
                   @click="presets.remove(preset.id)"
                 >
                   <RiDeleteBinLine class="size-5" />
@@ -87,21 +83,8 @@
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm font-medium">Тип повторения</label>
-            <div class="flex flex-wrap gap-2">
-              <Button
-                v-for="type in RULE_TYPES"
-                :key="type.id"
-                type="button"
-                size="sm"
-                variant="secondary"
-                :class="ruleType === type.id ? 'bg-primary text-primary-foreground' : ''"
-                class="rounded-full"
-                @click="ruleType = type.id"
-              >
-                {{ type.label }}
-              </Button>
-            </div>
+            <label :for="ruleTypeId" class="block text-sm font-medium">Тип повторения</label>
+            <Select :id="ruleTypeId" v-model="ruleType" :options="RULE_TYPES" />
           </div>
 
           <!-- Cycle rule parameters -->
@@ -118,21 +101,8 @@
 
           <!-- Weekdays rule parameters -->
           <div v-if="ruleType === 'weekdays'" class="space-y-2">
-            <label class="block text-sm font-medium">Рабочие дни недели</label>
-            <div class="flex flex-wrap gap-2">
-              <Button
-                v-for="(day, index) in WEEKDAYS"
-                :key="index"
-                type="button"
-                size="sm"
-                variant="secondary"
-                :class="weekdays.includes(index) ? 'bg-primary text-primary-foreground' : ''"
-                class="rounded-full"
-                @click="toggleWeekday(index)"
-              >
-                {{ day }}
-              </Button>
-            </div>
+            <label :for="weekdaysId" class="block text-sm font-medium">Рабочие дни недели</label>
+            <Select :id="weekdaysId" v-model="weekdays" :options="WEEKDAYS" placeholder="Выберите дни" />
           </div>
 
           <div class="space-y-2">
@@ -150,14 +120,14 @@
           <p v-if="formError" class="text-sm text-destructive">{{ formError }}</p>
 
           <div class="flex gap-2">
-            <Button type="submit" size="lg" class="flex-1 rounded-full">
+            <Button type="submit" size="lg" class="flex-1 rounded-2xl">
               {{ editingPreset ? 'Сохранить' : 'Создать' }}
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="lg"
-              class="rounded-full"
+              class="rounded-2xl"
               @click="cancelEdit"
             >
               Отмена
@@ -170,10 +140,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { RiAddLine, RiDeleteBinLine, RiEditLine } from '@remixicon/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 import { TimePicker } from '@/components/ui/time-picker'
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from '@/components/ui/drawer'
 import { usePresetsStore } from '@/stores/presets'
@@ -192,33 +163,32 @@ const RULE_TYPES = [
   { id: 'weekdays', label: 'Дни недели' },
 ] as const
 
-const WEEKDAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+const WEEKDAYS = ([
+  ['Воскресенье', 'Вс'],
+  ['Понедельник', 'Пн'],
+  ['Вторник', 'Вт'],
+  ['Среда', 'Ср'],
+  ['Четверг', 'Чт'],
+  ['Пятница', 'Пт'],
+  ['Суббота', 'Сб'],
+] as const).map(([label, shortLabel], id) => ({ id, label, shortLabel }))
 
 const showCreateDialog = ref(false)
 const editingPreset = ref<Preset | null>(null)
 const formError = ref('')
 
-const { handleSubmit, defineField, setValues, resetForm, setFieldValue } = useFormSchema(presetFormSchema, presetFormDefaults)
+const { handleSubmit, defineField, setValues, resetForm } = useFormSchema(presetFormSchema, presetFormDefaults)
 
 const [label] = defineField('label')
 const [hint] = defineField('hint')
 const [ruleType] = defineField('ruleType')
+const ruleTypeId = useId()
 const [cycleWork] = defineField('cycleWork')
 const [cycleOff] = defineField('cycleOff')
 const [weekdays] = defineField('weekdays')
+const weekdaysId = useId()
 const [dayStart] = defineField('dayStart')
 const [dayEnd] = defineField('dayEnd')
-
-function toggleWeekday(day: number) {
-  const index = weekdays.value.indexOf(day)
-  if (index === -1) {
-    setFieldValue('weekdays', [...weekdays.value, day])
-  } else {
-    const newWeekdays = [...weekdays.value]
-    newWeekdays.splice(index, 1)
-    setFieldValue('weekdays', newWeekdays)
-  }
-}
 
 function editPreset(preset: Preset) {
   editingPreset.value = preset

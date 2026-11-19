@@ -66,8 +66,10 @@ export async function addDefaultShift(page: Page, isoDate: string, weekly = fals
   await openDayList(page, isoDate)
   await page.getByRole('button', { name: 'Добавить смену' }).click()
   if (weekly) {
-    await page.getByRole('button', { name: 'Пресет', exact: true }).click()
-    await page.getByRole('button', { name: 'Обычный', exact: true }).click()
+    await page.getByRole('combobox', { name: 'Тип графика' }).click()
+    await page.getByRole('option', { name: 'Пресет', exact: true }).click()
+    await page.getByRole('combobox', { name: 'Пресет', exact: true }).click()
+    await page.getByRole('option', { name: 'Обычный', exact: true }).click()
   }
   await page.getByRole('button', { name: 'Сохранить' }).click()
 }

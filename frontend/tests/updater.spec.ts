@@ -3,13 +3,23 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-const cap = vi.hoisted(() => ({ native: true }))
+const cap = vi.hoisted(() => ({ native: true, androidVersionAvailable: true, getSdk: vi.fn() }))
 const upd = vi.hoisted(() => ({ notifyAppReady: vi.fn(), download: vi.fn(), set: vi.fn(), list: vi.fn(), current: vi.fn(), delete: vi.fn() }))
 const http = vi.hoisted(() => ({ get: vi.fn() }))
 
 vi.mock('@capacitor/core', async (original) => {
   const core = await original<typeof import('@capacitor/core')>()
-  return { ...core, Capacitor: { ...core.Capacitor, isNativePlatform: () => cap.native }, CapacitorHttp: http }
+  return {
+    ...core,
+    Capacitor: {
+      ...core.Capacitor,
+      isNativePlatform: () => cap.native,
+      getPlatform: () => cap.native ? 'android' : 'web',
+      isPluginAvailable: (name: string) => name === 'AndroidVersion' && cap.androidVersionAvailable,
+    },
+    CapacitorHttp: http,
+    registerPlugin: (name: string) => name === 'AndroidVersion' ? { getSdk: cap.getSdk } : core.registerPlugin(name),
+  }
 })
 vi.mock('@capgo/capacitor-updater', () => ({ CapacitorUpdater: upd }))
 vi.mock('@/lib/api', () => ({
@@ -33,7 +43,9 @@ const status = useUpdateStatus()
 
 beforeEach(() => {
   cap.native = true
+  cap.androidVersionAvailable = true
   vi.clearAllMocks()
+  cap.getSdk.mockResolvedValue({ sdk: 24 })
   setUpdateStatus(null)
   upd.notifyAppReady.mockResolvedValue(undefined)
   upd.download.mockResolvedValue({ id: 'b2' })
@@ -59,10 +71,50 @@ describe('initUpdater', () => {
     expect(localStorage.getItem('grafic.updatingTo')).toBe('build-2')
   })
 
+  it('waits for friend storage before applying an update', async () => {
+    let markSaved!: () => void
+    const saving = new Promise<void>((resolve) => { markSaved = resolve })
+    const beforeApply = vi.fn(() => saving)
+    const update = initUpdater(beforeApply)
+    await flushPromises()
+    expect(beforeApply).toHaveBeenCalledOnce()
+    expect(upd.set).not.toHaveBeenCalled()
+    markSaved()
+    await update
+    expect(upd.set).toHaveBeenCalledOnce()
+  })
+
   it('parses a string response', async () => {
     http.get.mockResolvedValue({ status: 200, data: JSON.stringify({ build: 'build-2', url: 'u' }) })
     await initUpdater()
     expect(upd.download).toHaveBeenCalledWith({ url: 'u', version: 'build-2' })
+  })
+
+  it('skips incompatible updates without showing a status or changing bundles', async () => {
+    http.get.mockResolvedValue({ status: 200, data: { build: 'build-2', url: 'u', minAndroidSdk: 26 } })
+    await initUpdater()
+    expect(upd.notifyAppReady).toHaveBeenCalled()
+    expect(upd.list).not.toHaveBeenCalled()
+    expect(upd.download).not.toHaveBeenCalled()
+    expect(upd.set).not.toHaveBeenCalled()
+    expect(status.value).toBeNull()
+  })
+
+  it('applies an update when Android meets the manifest minimum', async () => {
+    http.get.mockResolvedValue({ status: 200, data: { build: 'build-2', url: 'u', minAndroidSdk: 26 } })
+    cap.getSdk.mockResolvedValue({ sdk: 26 })
+    expect(await checkForUpdates()).toBe('updating')
+    expect(upd.download).toHaveBeenCalled()
+  })
+
+  it('only applies updates within the guaranteed SDK range on older APKs', async () => {
+    cap.androidVersionAvailable = false
+    http.get.mockResolvedValueOnce({ status: 200, data: { build: 'build-2', url: 'u', minAndroidSdk: 26 } })
+    expect(await checkForUpdates()).toBe('incompatible')
+    expect(upd.download).not.toHaveBeenCalled()
+    http.get.mockResolvedValueOnce({ status: 200, data: { build: 'build-2', url: 'u', minAndroidSdk: 24 } })
+    expect(await checkForUpdates()).toBe('updating')
+    expect(cap.getSdk).not.toHaveBeenCalled()
   })
 
   it('stays quiet when already on the latest build or the manifest is empty', async () => {

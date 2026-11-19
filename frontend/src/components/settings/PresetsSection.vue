@@ -43,7 +43,7 @@
                 </p>
               </div>
               <Button
-                variant="destructive"
+                variant="secondary" class="text-destructive"
                 size="icon-sm"
                 aria-label="Удалить пресет"
                 @click="presets.remove(preset.id)"

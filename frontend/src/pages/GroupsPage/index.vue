@@ -1,21 +1,17 @@
 <template>
   <section class="space-y-3">
-    <div class="rounded-[1.75rem] bg-card px-4 pb-4 pt-4">
+    <div class="rounded-4xl bg-card px-4 pb-4 pt-4">
       <div class="mb-4 flex items-center justify-between">
         <h1 class="text-xl font-semibold">Группы</h1>
         <Button
           size="icon-lg"
-          class="rounded-full"
+          class="rounded-2xl"
           aria-label="Создать группу"
           @click="showCreateDialog = true"
         >
           <RiAddLine class="size-5" />
         </Button>
       </div>
-
-      <p class="mb-4 text-sm text-muted-foreground">
-        Создавайте группы и добавляйте в них друзей. Члены группы не будут отображаться отдельно в календаре.
-      </p>
 
       <div v-if="store.state.groups.length" class="space-y-3">
         <div
@@ -39,7 +35,7 @@
               <div
                 v-for="memberId in group.memberIds"
                 :key="memberId"
-                class="flex items-center gap-2 rounded-full bg-background px-3 py-1.5 text-sm"
+                class="flex items-center gap-2 rounded-xl bg-background px-3 py-1.5 text-sm"
               >
                 <span
                   class="size-2 shrink-0 rounded-full"
@@ -60,8 +56,8 @@
             <div class="flex flex-wrap gap-2 pt-2">
               <Button
                 size="sm"
-                variant="outline"
-                class="flex-1 min-w-[120px] rounded-full"
+                variant="secondary"
+                class="flex-1 min-w-[120px]"
                 @click="addMember(group)"
               >
                 <RiAddLine class="size-4 mr-1" />
@@ -69,8 +65,8 @@
               </Button>
               <Button
                 size="sm"
-                variant="outline"
-                class="flex-1 min-w-[120px] rounded-full"
+                variant="secondary"
+                class="flex-1 min-w-[120px]"
                 @click="editGroup(group)"
               >
                 <RiEditLine class="size-4 mr-1" />
@@ -78,8 +74,8 @@
               </Button>
               <Button
                 size="sm"
-                variant="destructive"
-                class="flex-1 min-w-[120px] rounded-full"
+                variant="secondary"
+                class="text-destructive flex-1 min-w-[120px]"
                 @click="store.removeGroup(group.id)"
               >
                 <RiDeleteBinLine class="size-4 mr-1" />
@@ -123,14 +119,14 @@
           </div>
 
           <div class="flex gap-2">
-            <Button type="submit" size="lg" class="flex-1 rounded-full">
+            <Button type="submit" size="lg" class="flex-1">
               {{ editingGroup ? 'Сохранить' : 'Создать' }}
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="lg"
-              class="rounded-full"
+              class="rounded-2xl"
               @click="cancelEdit"
             >
               Отмена

@@ -8,22 +8,22 @@
     fixed-weeks
     prevent-deselect
     weekday-format="short"
-    class="rounded-[1.75rem] bg-card px-1.5 pb-3 pt-3 sm:rounded-[2rem] sm:px-4 sm:pb-4 sm:pt-4"
+    class="rounded-4xl bg-card px-1.5 pb-3 pt-3sm:px-4 sm:pb-4 sm:pt-4"
     @update:model-value="onPick"
     @touchstart.passive="onTouchStart"
     @touchend.passive="onTouchEnd"
   >
     <CalendarHeader class="mb-0 px-1.5">
-      <CalendarPrevButton class="size-10 shrink-0 rounded-full border-0 bg-muted/60 text-muted-foreground opacity-100 transition active:scale-90 active:bg-muted" @click="s.shiftMonth(-1)" />
+      <CalendarPrevButton class="size-10 shrink-0 rounded-2xl border-0 bg-muted/60 text-muted-foreground opacity-100 transition active:scale-90 active:bg-muted" @click="s.shiftMonth(-1)" />
       <CalendarHeading class="min-w-0 flex-1 text-center text-[1.05rem] font-semibold tracking-tight first-letter:uppercase sm:text-lg" />
-      <CalendarNextButton class="size-10 shrink-0 rounded-full border-0 bg-muted/60 text-muted-foreground opacity-100 transition active:scale-90 active:bg-muted" @click="s.shiftMonth(1)" />
+      <CalendarNextButton class="size-10 shrink-0 rounded-2xl border-0 bg-muted/60 text-muted-foreground opacity-100 transition active:scale-90 active:bg-muted" @click="s.shiftMonth(1)" />
     </CalendarHeader>
 
     <div class="-mt-1 mb-3 flex h-7 justify-center">
       <button
         v-if="monthsFromToday"
         type="button"
-        class="rounded-full bg-primary/12 px-3.5 text-xs font-medium text-primary transition active:scale-95"
+        class="rounded-2xl bg-primary/12 px-3.5 text-xs font-medium text-primary transition active:scale-95"
         @click="s.shiftMonth(-monthsFromToday)"
       >
         ← К текущему месяцу

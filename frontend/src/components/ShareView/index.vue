@@ -8,7 +8,7 @@
         <div class="flex items-stretch gap-3 rounded-3xl bg-secondary p-3">
           <div class="flex-1 py-3 text-4xl font-bold tracking-[0.3em] text-foreground">{{ s.shareCode || '…' }}</div>
           <Button
-            variant="outline"
+            variant="secondary"
             class="h-auto rounded-2xl bg-background px-4"
             :title="copied ? 'Скопировано' : 'Скопировать'"
             :aria-label="copied ? 'Скопировано' : 'Скопировать'"
@@ -17,7 +17,7 @@
             <component :is="copied ? RiCheckLine : RiFileCopyLine" class="size-5" />
           </Button>
         </div>
-        <Button variant="outline" size="lg" class="h-10 w-full" @click="askRegenerate"><RiRefreshLine /> {{ confirming ? 'Старый код перестанет работать. Заменить?' : 'Новый код' }}</Button>
+        <Button variant="secondary" size="lg" class="h-10 w-full" @click="askRegenerate"><RiRefreshLine /> {{ confirming ? 'Старый код перестанет работать. Заменить?' : 'Новый код' }}</Button>
       </CardContent>
     </Card>
 

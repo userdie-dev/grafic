@@ -128,14 +128,14 @@ describe('SettingsPage', () => {
     const store = useScheduleStore()
     const w = mount(SettingsPage)
     const switches = w.findAll('button[role="switch"]')
-    expect(switches.map((s) => s.attributes('aria-checked'))).toEqual(['false', 'true', 'true'])
+    expect(switches.map((s) => s.attributes('aria-checked'))).toEqual(['true', 'true'])
 
-    await switches[1]!.trigger('click')
+    await switches[0]!.trigger('click')
     expect(store.state.showCommonOff).toBe(false)
-    await switches[2]!.trigger('click')
+    await switches[1]!.trigger('click')
     expect(store.state.showFreeHours).toBe(false)
 
-    await switches[1]!.trigger('click')
+    await switches[0]!.trigger('click')
     expect(store.state.showCommonOff).toBe(true)
   })
 })

@@ -43,7 +43,7 @@
 
         <div class="flex gap-2">
           <Button type="submit" class="h-10 flex-1">Сохранить</Button>
-          <Button v-if="editor.removable.value" type="button" variant="outline" class="h-10 flex-1 text-destructive" @click="askRemove">
+          <Button v-if="editor.removable.value" type="button" variant="secondary" class="h-10 flex-1 text-destructive" @click="askRemove">
             <RiDeleteBinLine /> {{ removing ? 'Точно удалить?' : 'Удалить' }}
           </Button>
         </div>

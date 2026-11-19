@@ -9,7 +9,7 @@
       <component :is="icon" class="size-5" />
     </span>
     <span class="min-w-0 flex-1">
-      <span class="block text-[15px] font-semibold leading-tight">{{ title }}</span>
+      <span class="block text-base font-semibold leading-tight">{{ title }}</span>
       <Transition
         enter-active-class="transition-[grid-template-rows,opacity] duration-200 ease-out"
         enter-from-class="grid-rows-[0fr] opacity-0"

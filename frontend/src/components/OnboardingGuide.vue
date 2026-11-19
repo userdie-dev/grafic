@@ -13,7 +13,7 @@
       class="fixed inset-0 z-50 flex flex-col bg-background pb-[max(1rem,env(safe-area-inset-bottom))] pt-[calc(1rem+max(env(safe-area-inset-top),var(--safe-area-inset-top,0px)))]"
     >
       <div class="flex justify-end px-4">
-        <Button variant="ghost" size="sm" @click="finish">Пропустить</Button>
+        <Button variant="secondary" size="sm" @click="finish">Пропустить</Button>
       </div>
 
       <div class="mx-auto flex min-h-0 w-full max-w-md flex-1 flex-col items-center justify-center gap-6 overflow-y-auto px-6">
@@ -29,7 +29,7 @@
           <span v-for="(_, i) in SLIDES" :key="i" class="h-2 rounded-full transition-all" :class="i === index ? 'w-6 bg-primary' : 'w-2 bg-muted'" />
         </div>
         <div class="flex gap-3">
-          <Button v-if="index > 0" variant="outline" size="lg" class="h-11 flex-1" @click="index--">Назад</Button>
+          <Button v-if="index > 0" variant="secondary" size="lg" class="h-11 flex-1" @click="index--">Назад</Button>
           <Button size="lg" class="h-11 flex-1" @click="next">{{ last ? 'Начать' : 'Далее' }}</Button>
         </div>
       </div>

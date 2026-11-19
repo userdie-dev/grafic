@@ -44,7 +44,10 @@
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) + 4px);
+    --radius-xl: calc(var(--radius) + 2px);
+    --radius-2xl: calc(var(--radius) + 4px);
+    --radius-3xl: calc(var(--radius) + 10px);
+    --radius-4xl: calc(var(--radius) + 14px);
 }
 
 :root {
@@ -71,7 +74,7 @@
     --chart-3: oklch(0.596 0.145 163.225);
     --chart-4: oklch(0.508 0.118 165.612);
     --chart-5: oklch(0.432 0.095 166.913);
-    --radius:1.25rem;
+    --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.596 0.145 163.225);

@@ -59,7 +59,7 @@ export function useCommonOffNotify() {
   const from = iso(addDays(new Date(), 1))
   const to = iso(addDays(new Date(), HORIZON_DAYS))
 
-  const subs = useQuery({ queryKey: ['subs'], queryFn: api.subscriptions, enabled })
+  const subs = useQuery({ queryKey: computed(() => ['subs', store.state.device?.userId]), queryFn: api.subscriptions, enabled })
   const mine = useQuery({
     queryKey: ['shifts', 'me', from, to],
     queryFn: () => api.myShifts(from, to),

@@ -1,16 +1,20 @@
-import { Capacitor, CapacitorHttp } from '@capacitor/core'
+import { Capacitor, CapacitorHttp, registerPlugin } from '@capacitor/core'
 import { CapacitorUpdater } from '@capgo/capacitor-updater'
 import { setUpdateStatus } from '@/composables/useUpdateStatus'
 
 const RELEASE_BASE = 'https://github.com/userdie-dev/grafic/releases/latest/download'
 /** Build id we are updating to; survives the webview reload so the next start can confirm the update. */
 const PENDING_KEY = 'grafic.updatingTo'
+// APKs released before this bridge was added already require Android API 24.
+const LEGACY_MIN_ANDROID_SDK = 24
+const AndroidVersion = registerPlugin<{ getSdk(): Promise<{ sdk: number }> }>('AndroidVersion')
 
 interface RemoteVersion {
   build: string
   url: string
   /** sha256 of dist.zip; the updater plugin refuses to download a bundle without it */
   checksum?: string
+  minAndroidSdk?: number
 }
 
 const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e))
@@ -39,13 +43,29 @@ async function dropStaleBundles() {
   }
 }
 
-export type UpdateResult = 'latest' | 'updating' | 'error'
+async function supportsAndroidUpdate(minSdk: number | undefined) {
+  if (minSdk === undefined || Capacitor.getPlatform() !== 'android') return true
+  if (!Number.isInteger(minSdk) || minSdk < 1) return false
+  if (!Capacitor.isPluginAvailable('AndroidVersion')) return minSdk <= LEGACY_MIN_ANDROID_SDK
+
+  try {
+    const { sdk } = await AndroidVersion.getSdk()
+    return sdk >= minSdk
+  } catch {
+    return false
+  }
+}
+
+export type UpdateResult = 'latest' | 'updating' | 'error' | 'incompatible'
 
 /**
  * Compares this build with the latest GitHub Release and applies a newer one (restarts the webview).
  * Failures are only logged on the automatic check at start; a manual check reports them in the toast.
  */
-export async function checkForUpdates({ manual = false } = {}): Promise<UpdateResult> {
+export async function checkForUpdates({ manual = false, beforeApply }: {
+  manual?: boolean
+  beforeApply?: () => Promise<void>
+} = {}): Promise<UpdateResult> {
   if (!Capacitor.isNativePlatform()) return 'latest'
 
   const fail = (text: string, e?: unknown): UpdateResult => {
@@ -67,6 +87,7 @@ export async function checkForUpdates({ manual = false } = {}): Promise<UpdateRe
     if (manual) setUpdateStatus({ kind: 'updated', text: 'У вас последняя версия' }, 4000)
     return 'latest'
   }
+  if (!(await supportsAndroidUpdate(remote.minAndroidSdk))) return 'incompatible'
 
   let bundle
   try {
@@ -76,6 +97,13 @@ export async function checkForUpdates({ manual = false } = {}): Promise<UpdateRe
   } catch (e) {
     setUpdateStatus(null)
     return fail(`Не удалось скачать обновление: ${errorText(e)}`, e)
+  }
+
+  try {
+    await beforeApply?.()
+  } catch (e) {
+    setUpdateStatus(null)
+    return fail(`Не удалось сохранить друзей перед обновлением: ${errorText(e)}`, e)
   }
 
   pendingBuild(remote.build)
@@ -94,7 +122,7 @@ export async function checkForUpdates({ manual = false } = {}): Promise<UpdateRe
 }
 
 // OTA-обновление веб-части при старте: тихая проверка, ошибки только в консоль.
-export async function initUpdater() {
+export async function initUpdater(beforeApply?: () => Promise<void>) {
   if (!Capacitor.isNativePlatform()) return
 
   // подтверждаем, что текущий бандл загрузился, иначе плагин откатится назад
@@ -106,5 +134,5 @@ export async function initUpdater() {
     setUpdateStatus({ kind: 'updated', text: `Приложение обновлено до версии ${__APP_VERSION__}` }, 5000)
   }
 
-  await checkForUpdates()
+  await checkForUpdates({ beforeApply })
 }

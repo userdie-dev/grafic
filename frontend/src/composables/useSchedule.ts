@@ -3,7 +3,7 @@ import { useEventSource } from '@vueuse/core'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { groupBy, uniq } from 'es-toolkit'
 import { api, eventsUrl } from '@/lib/api'
-import type { Shift, ShiftInput } from '@/lib/dto'
+import type { Shift, ShiftInput, Subscription } from '@/lib/dto'
 import { toLocalShift } from '@/lib/tz'
 import { addDays, parseISO } from 'date-fns'
 import { gridRange, iso, monthGrid } from '@/lib/dates'
@@ -48,7 +48,8 @@ export function useSchedule() {
     to: iso(addDays(parseISO(range.value.to), 1)),
   }))
 
-  const subsQuery = useQuery({ queryKey: ['subs'], queryFn: api.subscriptions, enabled })
+  const subscriptionsKey = computed(() => ['subs', store.state.device?.userId])
+  const subsQuery = useQuery({ queryKey: subscriptionsKey, queryFn: api.subscriptions, enabled })
 
   const mineQuery = useQuery({
     queryKey: computed(() => ['shifts', ME, store.state.device?.userId]),
@@ -208,12 +209,18 @@ export function useSchedule() {
     mutationFn: ({ code }: { code: string; label: string }) => api.subscribe(code),
     onSuccess: (sub, { code, label }) => {
       store.rename(sub.ownerId, label.trim() || code)
-      return qc.invalidateQueries({ queryKey: ['subs'] })
+      qc.setQueryData<Subscription[]>(subscriptionsKey.value, (current) => [
+        ...(current ?? []).filter((friend) => friend.ownerId !== sub.ownerId), sub,
+      ])
+      return qc.invalidateQueries({ queryKey: subscriptionsKey.value })
     },
   })
   const unsubscribe = useMutation({
     mutationFn: api.unsubscribe,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['subs'] }),
+    onSuccess: (_, subId) => {
+      qc.setQueryData<Subscription[]>(subscriptionsKey.value, (current) => current?.filter((friend) => friend.id !== subId))
+      return qc.invalidateQueries({ queryKey: subscriptionsKey.value })
+    },
   })
   const regenerate = useMutation({
     mutationFn: api.regenerateCode,

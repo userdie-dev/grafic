@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   plugins: {
     // обновлением управляет src/app/config/updater.ts (GitHub Releases), не облако Capgo
-    CapacitorUpdater: { autoUpdate: false }
+    CapacitorUpdater: { autoUpdate: false, nativeUpdatePrompt: false }
   }
 };
 

@@ -58,7 +58,9 @@ jobs:
           (cd dist && zip -r ../dist.zip .)
           # плагин обновления отказывается качать бандл без sha256-чексуммы
           SUM=$(sha256sum dist.zip | cut -d' ' -f1)
-          echo "{\"build\":\"build-${{ github.run_number }}\",\"url\":\"https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/dist.zip\",\"checksum\":\"$SUM\"}" > version.json
+          MIN_SDK=$(sed -nE 's/^[[:space:]]*minSdkVersion[[:space:]]*=[[:space:]]*([0-9]+)[[:space:]]*$/\1/p' android/variables.gradle)
+          test -n "$MIN_SDK"
+          echo "{\"build\":\"build-${{ github.run_number }}\",\"url\":\"https://github.com/${{ github.repository }}/releases/download/build-${{ github.run_number }}/dist.zip\",\"checksum\":\"$SUM\",\"minAndroidSdk\":$MIN_SDK}" > version.json
 
       - name: Publish release
         uses: softprops/action-gh-release@v2

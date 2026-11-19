@@ -7,7 +7,6 @@
       :icon="CalendarDays"
       tint="bg-emerald-200 text-emerald-800"
       title="Общие свободные дни"
-      hint="Подсвечивать дни, когда вы и все друзья не работаете"
       @click="store.state.showCommonOff = !store.state.showCommonOff"
     >
       <span
@@ -25,7 +24,6 @@
       :icon="Clock"
       tint="bg-sky-200 text-sky-800"
       title="Общие свободные часы"
-      hint="Подсвечивать дни, когда у вас и у друзей совпадает хотя бы час"
       @click="store.state.showFreeHours = !store.state.showFreeHours"
     >
       <span

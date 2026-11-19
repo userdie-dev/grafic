@@ -7,7 +7,7 @@
       :icon="Bell"
       tint="bg-emerald-200 text-emerald-800"
       title="Общий выходной"
-      :hint="hint || 'Напомнить вечером накануне дня, когда выходной у вас и у всех друзей'"
+      :hint="hint"
       @click="toggle"
     >
       <span
